@@ -3,6 +3,7 @@
   "appName": "AQB EDU",
   "webDir": ".",
   "plugins": {
+    
     "CapacitorHttp": {
       "enabled": true
     },
