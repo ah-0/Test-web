@@ -9,13 +9,13 @@
   <link rel="stylesheet" href="css/style.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <style>
-    /* ── File Card ── */
+    /* ── File Card ───────────────────────────────────── */
     .file-card {
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: var(--radius);
       overflow: hidden;
-      transition: border-color .2s;
+      transition: border-color .25s;
     }
     .file-card.downloading { border-color: var(--blue); }
     .file-card.done        { border-color: var(--green); }
@@ -26,36 +26,33 @@
       padding: 14px 16px;
     }
     .file-icon {
-      width: 46px; height: 46px; border-radius: 12px;
+      width: 48px; height: 48px; border-radius: 12px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 22px; flex-shrink: 0;
+      font-size: 24px; flex-shrink: 0;
     }
     .file-meta { flex: 1; min-width: 0; }
-    .file-name { font-size: 14px; font-weight: 700; }
+    .file-name    { font-size: 14px; font-weight: 700; }
     .file-subject { font-size: 12px; color: var(--muted); margin-top: 3px; }
 
-    /* ── Download Button ── */
+    /* ── Download Button ─────────────────────────────── */
     .btn-dl {
       display: flex; align-items: center; gap: 6px;
       background: var(--blue2); color: #fff;
       border: none; border-radius: 10px;
       padding: 9px 14px; font-size: 13px; font-weight: 700;
-      cursor: pointer; transition: background .15s, opacity .15s;
-      white-space: nowrap; flex-shrink: 0;
+      cursor: pointer; white-space: nowrap; flex-shrink: 0;
+      transition: opacity .15s, background .2s;
       font-family: inherit;
     }
-    .btn-dl:active { opacity: .8; }
-    .btn-dl:disabled { background: var(--surface); color: var(--muted); cursor: default; }
-    .btn-dl.done { background: #14532d; color: var(--green); }
-    .btn-dl.error { background: #450a0a; color: var(--red); }
+    .btn-dl:active     { opacity: .75; }
+    .btn-dl:disabled   { background: var(--surface); color: var(--muted); cursor: default; opacity: 1; }
+    .btn-dl.done       { background: #14532d; color: var(--green); }
+    .btn-dl.error-btn  { background: #450a0a; color: var(--red); }
 
-    /* ── Progress Section ── */
-    .file-progress {
-      padding: 0 16px 14px;
-      display: none;
-    }
+    /* ── Progress ────────────────────────────────────── */
+    .file-progress { padding: 0 16px 14px; display: none; }
     .file-card.downloading .file-progress,
-    .file-card.done .file-progress,
+    .file-card.done  .file-progress,
     .file-card.error .file-progress { display: block; }
 
     .progress-row {
@@ -63,24 +60,34 @@
       margin-bottom: 8px;
     }
     .progress-status { font-size: 12px; color: var(--muted); }
-    .progress-pct { font-size: 13px; font-weight: 700; color: var(--blue-l); }
+    .progress-pct    { font-size: 13px; font-weight: 700; color: var(--blue-l); }
     .file-card.done  .progress-pct { color: var(--green); }
     .file-card.error .progress-pct { color: var(--red); }
 
     .progress-track {
-      width: 100%; height: 8px; background: var(--surface);
-      border-radius: 100px; overflow: hidden;
+      width: 100%; height: 8px;
+      background: var(--surface); border-radius: 100px; overflow: hidden;
     }
     .progress-fill {
       height: 100%; width: 0%;
       background: linear-gradient(90deg, var(--blue2), var(--blue-l));
       border-radius: 100px;
-      transition: width .3s ease;
+      transition: width .25s ease;
     }
-    .file-card.done  .progress-fill { background: var(--green); width: 100% !important; }
+    .file-card.done  .progress-fill { background: var(--green); }
     .file-card.error .progress-fill { background: var(--red); }
 
-    /* ── PDF Viewer ── */
+    /* Indeterminate shimmer for unknown size */
+    @keyframes shimmer {
+      0%   { transform: translateX(100%); }
+      100% { transform: translateX(-200%); }
+    }
+    .progress-fill.indeterminate {
+      width: 40% !important;
+      animation: shimmer 1.4s infinite linear;
+    }
+
+    /* ── PDF Viewer ──────────────────────────────────── */
     .pdf-viewer-wrap {
       border-top: 1px solid var(--border);
       display: none;
@@ -91,56 +98,49 @@
       display: flex; align-items: center; justify-content: space-between;
       padding: 10px 16px; background: var(--surface);
       border-bottom: 1px solid var(--border);
+      gap: 8px;
     }
     .pdf-toolbar-title { font-size: 12px; color: var(--muted); font-weight: 600; }
-    .pdf-pages-info { font-size: 12px; color: var(--blue-l); font-weight: 700; }
+    .pdf-pages-info    { font-size: 12px; color: var(--blue-l); font-weight: 700; white-space: nowrap; }
+
+    .pdf-close-btn {
+      background: none; border: none; color: var(--muted);
+      font-size: 18px; cursor: pointer; padding: 0 2px;
+      line-height: 1; flex-shrink: 0;
+    }
 
     .pdf-pages-container {
       padding: 12px;
-      display: flex; flex-direction: column; gap: 8px;
-      max-height: 520px; overflow-y: auto;
-      background: #1a1a2e;
+      display: flex; flex-direction: column; gap: 10px;
+      max-height: 560px; overflow-y: auto;
+      background: #111827;
+      scroll-behavior: smooth;
     }
+
     .pdf-page-wrap {
       position: relative; background: #fff;
       border-radius: 6px; overflow: hidden;
-      box-shadow: 0 2px 12px rgba(0,0,0,.5);
-      animation: pageFadeIn .35s ease;
+      box-shadow: 0 2px 16px rgba(0,0,0,.6);
+      animation: pageFadeIn .3s ease both;
     }
     @keyframes pageFadeIn {
-      from { opacity: 0; transform: translateY(8px); }
+      from { opacity: 0; transform: translateY(10px); }
       to   { opacity: 1; transform: translateY(0); }
     }
-    .pdf-page-wrap canvas { display: block; width: 100%; }
+    .pdf-page-wrap canvas { display: block; width: 100%; height: auto; }
 
-    .pdf-page-num {
-      position: absolute; top: 6px; right: 8px;
-      background: rgba(0,0,0,.55); color: #fff;
-      font-size: 11px; padding: 2px 7px; border-radius: 20px;
+    .pdf-page-badge {
+      position: absolute; bottom: 8px; left: 8px;
+      background: rgba(0,0,0,.6); color: #fff;
+      font-size: 10px; padding: 2px 8px; border-radius: 20px;
     }
 
-    .pdf-loading-msg {
-      text-align: center; padding: 28px 16px;
+    .pdf-msg {
+      text-align: center; padding: 32px 16px;
       font-size: 13px; color: var(--muted);
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
     }
-
-    /* ── Iframe fallback viewer ── */
-    .pdf-iframe-viewer {
-      width: 100%; height: 480px; border: none;
-      display: block;
-    }
-
-    /* ── Open button ── */
-    .view-toggle-btn {
-      display: flex; align-items: center; gap: 6px;
-      width: calc(100% - 32px); margin: 0 16px 14px;
-      background: var(--surface); color: var(--blue-l);
-      border: 1px solid var(--border); border-radius: 10px;
-      padding: 10px; font-size: 13px; font-weight: 700;
-      cursor: pointer; font-family: inherit; justify-content: center;
-      transition: background .15s;
-    }
-    .view-toggle-btn:active { background: var(--card); }
+    .pdf-msg .pdf-msg-icon { font-size: 28px; }
   </style>
 </head>
 <body class="page">
@@ -164,71 +164,144 @@
 <script>
 'use strict';
 
-/* ═══════════════════════════════════════════════════════════════
-   ملف الإعدادات — أضف ملفات PDF جديدة هنا فقط
-   ═══════════════════════════════════════════════════════════════ */
-const PDF_FILES = [
-  {
-    id: 'algebra9',
-    name: 'كتاب الجبر للصف التاسع',
-    subject: 'الرياضيات',
-    icon: '🔢',
-    color: '#1e3a5f',
-    downloadUrl: 'https://drive.google.com/uc?export=download&id=1CXp06PR3YMi-tNISvNXdbsGFldwt8X0z',
-    previewUrl:  'https://drive.google.com/file/d/1CXp06PR3YMi-tNISvNXdbsGFldwt8X0z/preview',
-    fileId:      '1CXp06PR3YMi-tNISvNXdbsGFldwt8X0z',
-  },
-  /* ── مثال لإضافة ملف جديد:
-  {
-    id: 'physics10',
-    name: 'كتاب الفيزياء للصف العاشر',
-    subject: 'العلوم',
-    icon: '⚡',
-    color: '#14532d',
-    downloadUrl: 'https://...',
-    previewUrl:  'https://drive.google.com/file/d/FILE_ID/preview',
-    fileId:      'FILE_ID',
-  },
-  ── */
-];
-
-/* ═══════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════════
    إعداد PDF.js
-   ═══════════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════════════ */
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-/* ═══════════════════════════════════════════════════════════════
-   حالة كل ملف
-   ═══════════════════════════════════════════════════════════════ */
-const fileState = {};
+/* ═══════════════════════════════════════════════════════════════════
+   قائمة الملفات — أضف أي ملف جديد هنا فقط
+   ═══════════════════════════════════════════════════════════════════ */
+const PDF_FILES = [
+  {
+    id:          'algebra9',
+    name:        'كتاب الجبر للصف التاسع',
+    subject:     'الرياضيات',
+    icon:        '🔢',
+    color:       '#1e3a5f',
+    downloadUrl: 'https://drive.google.com/uc?export=download&id=1CXp06PR3YMi-tNISvNXdbsGFldwt8X0z',
+  },
+  /* ─── مثال ملف جديد ───────────────────────────────────────
+  {
+    id:          'physics10',
+    name:        'كتاب الفيزياء للصف العاشر',
+    subject:     'العلوم',
+    icon:        '⚡',
+    color:       '#14532d',
+    downloadUrl: 'https://...',
+  },
+  ─────────────────────────────────────────────────────────── */
+];
 
-/* ═══════════════════════════════════════════════════════════════
-   Cache API — للتخزين بدون إنترنت
-   ═══════════════════════════════════════════════════════════════ */
-const CACHE_NAME = 'aqb-files-v1';
+/* ═══════════════════════════════════════════════════════════════════
+   حالة الملفات في الذاكرة
+   ═══════════════════════════════════════════════════════════════════ */
+const fileState = {};   // 'idle' | 'downloading' | 'done' | 'error'
 
-async function saveToCache(fileId, buffer) {
-  try {
-    const cache = await caches.open(CACHE_NAME);
-    const blob = new Blob([buffer], { type: 'application/pdf' });
-    const resp = new Response(blob, { headers: { 'Content-Type': 'application/pdf' } });
-    await cache.put('pdf:' + fileId, resp);
-  } catch (e) { /* Cache API غير متاح */ }
+/* ═══════════════════════════════════════════════════════════════════
+   Capacitor Filesystem helpers
+   ── يعمل على native (iOS/Android) ويرجع null على الويب
+   ═══════════════════════════════════════════════════════════════════ */
+const FS         = () => CAP('Filesystem');
+const FS_DIR     = 'DATA';
+const FS_SUBDIR  = 'aqb_pdf/';
+
+function toBase64(arrayBuffer) {
+  let binary = '';
+  const bytes = new Uint8Array(arrayBuffer);
+  const chunk = 8192;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
 }
 
-async function loadFromCache(fileId) {
+function fromBase64(b64) {
+  const binary = atob(b64);
+  const buf    = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) buf[i] = binary.charCodeAt(i);
+  return buf.buffer;
+}
+
+async function fsFileExists(filename) {
+  const fs = FS();
+  if (!fs) return false;
   try {
-    const cache = await caches.open(CACHE_NAME);
-    const resp = await cache.match('pdf:' + fileId);
-    if (!resp) return null;
-    return await resp.arrayBuffer();
+    await fs.stat({ path: FS_SUBDIR + filename, directory: FS_DIR });
+    return true;
+  } catch { return false; }
+}
+
+async function fsSave(filename, arrayBuffer) {
+  const fs = FS();
+  if (!fs) return false;
+  try {
+    await fs.writeFile({
+      path:      FS_SUBDIR + filename,
+      data:      toBase64(arrayBuffer),
+      directory: FS_DIR,
+      recursive: true,
+      encoding:  'base64',
+    });
+    return true;
+  } catch (e) {
+    console.error('Filesystem.writeFile failed:', e);
+    return false;
+  }
+}
+
+async function fsLoad(filename) {
+  const fs = FS();
+  if (!fs) return null;
+  try {
+    const result = await fs.readFile({
+      path:      FS_SUBDIR + filename,
+      directory: FS_DIR,
+      encoding:  'base64',
+    });
+    return fromBase64(result.data);
   } catch { return null; }
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   بناء HTML لكل بطاقة ملف
-   ═══════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════════
+   Cache API — احتياطي على الويب عندما لا يتوفر Capacitor
+   ═══════════════════════════════════════════════════════════════════ */
+const CACHE_NAME = 'aqb-files-v2';
+
+async function cacheSave(fileId, buffer) {
+  try {
+    const cache = await caches.open(CACHE_NAME);
+    const blob  = new Blob([buffer], { type: 'application/pdf' });
+    await cache.put('pdf:' + fileId, new Response(blob));
+  } catch { /* Cache API غير متاح */ }
+}
+
+async function cacheLoad(fileId) {
+  try {
+    const cache = await caches.open(CACHE_NAME);
+    const resp  = await cache.match('pdf:' + fileId);
+    return resp ? await resp.arrayBuffer() : null;
+  } catch { return null; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   حفظ + تحميل موحّد (native أولاً، ثم Cache API)
+   ═══════════════════════════════════════════════════════════════════ */
+async function storageSave(fileId, buffer) {
+  const saved = await fsSave(fileId + '.pdf', buffer);
+  if (!saved) await cacheSave(fileId, buffer);
+}
+
+async function storageLoad(fileId) {
+  const fromFs = await fsLoad(fileId + '.pdf');
+  if (fromFs) return fromFs;
+  return cacheLoad(fileId);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   بناء HTML بطاقة الملف
+   ═══════════════════════════════════════════════════════════════════ */
 function buildFileCard(f) {
   return `
   <div class="file-card" id="card-${f.id}">
@@ -248,7 +321,7 @@ function buildFileCard(f) {
     <div class="file-progress" id="prog-${f.id}">
       <div class="progress-row">
         <span class="progress-status" id="status-${f.id}">جارٍ التحميل…</span>
-        <span class="progress-pct"   id="pct-${f.id}">0%</span>
+        <span class="progress-pct"    id="pct-${f.id}">0%</span>
       </div>
       <div class="progress-track">
         <div class="progress-fill" id="fill-${f.id}"></div>
@@ -259,72 +332,89 @@ function buildFileCard(f) {
       <div class="pdf-toolbar">
         <span class="pdf-toolbar-title">📄 عارض PDF</span>
         <span class="pdf-pages-info" id="pages-info-${f.id}"></span>
+        <button class="pdf-close-btn" onclick="closeViewer('${f.id}')" title="إغلاق">✕</button>
       </div>
       <div class="pdf-pages-container" id="pages-${f.id}">
-        <div class="pdf-loading-msg">⏳ جارٍ تجهيز العارض…</div>
+        <div class="pdf-msg">
+          <span class="pdf-msg-icon">⏳</span>
+          <span>جارٍ تجهيز العارض…</span>
+        </div>
       </div>
     </div>
   </div>`;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   تحديث واجهة شريط التقدم
-   ═══════════════════════════════════════════════════════════════ */
-function setProgress(fileId, pct, statusText) {
-  const card   = document.getElementById('card-'   + fileId);
+/* ═══════════════════════════════════════════════════════════════════
+   تحديث واجهة التقدم
+   ═══════════════════════════════════════════════════════════════════ */
+function setProgress(fileId, pct, statusText, indeterminate = false) {
   const fill   = document.getElementById('fill-'   + fileId);
   const pctEl  = document.getElementById('pct-'    + fileId);
   const statEl = document.getElementById('status-' + fileId);
-  if (!card) return;
-  fill.style.width  = pct + '%';
-  pctEl.textContent = Math.round(pct) + '%';
-  if (statusText) statEl.textContent = statusText;
+  if (!fill) return;
+
+  if (indeterminate) {
+    fill.classList.add('indeterminate');
+    pctEl.textContent = '…';
+  } else {
+    fill.classList.remove('indeterminate');
+    fill.style.width  = Math.min(100, pct) + '%';
+    pctEl.textContent = Math.round(Math.min(100, pct)) + '%';
+  }
+  if (statusText && statEl) statEl.textContent = statusText;
 }
 
 function setCardState(fileId, state, statusText) {
   const card = document.getElementById('card-' + fileId);
   const btn  = document.getElementById('btn-'  + fileId);
-  if (!card) return;
+  if (!card || !btn) return;
+
   card.classList.remove('downloading', 'done', 'error');
+  btn.classList.remove('done', 'error-btn');
   card.classList.add(state);
 
-  const labels = {
-    downloading: '⏸ جارٍ التحميل',
-    done:  '✓ مكتمل',
-    error: '↺ إعادة المحاولة',
-  };
-  btn.textContent = labels[state] || '⬇ تحميل';
-  btn.disabled = (state === 'downloading');
-  if (state === 'error') {
+  if (state === 'downloading') {
+    btn.textContent = '⏸ جارٍ التحميل';
+    btn.disabled    = true;
+  } else if (state === 'done') {
+    btn.textContent = '✓ مكتمل';
+    btn.classList.add('done');
     btn.disabled = false;
-    btn.onclick = () => startDownload(fileId);
+    btn.onclick  = () => openExistingPDF(fileId);
+  } else if (state === 'error') {
+    btn.textContent = '↺ إعادة المحاولة';
+    btn.classList.add('error-btn');
+    btn.disabled = false;
+    btn.onclick  = () => startDownload(fileId);
   }
+
   if (statusText) {
     const statEl = document.getElementById('status-' + fileId);
     if (statEl) statEl.textContent = statusText;
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   رسم صفحة PDF واحدة
-   ═══════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════════
+   رسم صفحة واحدة في العارض
+   ═══════════════════════════════════════════════════════════════════ */
 async function renderPage(pdfDoc, pageNum, container, fileId, total) {
   const page     = await pdfDoc.getPage(pageNum);
-  const viewport = page.getViewport({ scale: window.devicePixelRatio > 1 ? 1.5 : 1.2 });
+  const scale    = window.devicePixelRatio > 1 ? 1.6 : 1.3;
+  const viewport = page.getViewport({ scale });
 
-  const wrap   = document.createElement('div');
+  const wrap    = document.createElement('div');
   wrap.className = 'pdf-page-wrap';
+  wrap.style.animationDelay = (pageNum * 0.04) + 's';
 
-  const numLabel = document.createElement('div');
-  numLabel.className = 'pdf-page-num';
-  numLabel.textContent = 'ص ' + pageNum;
-  wrap.appendChild(numLabel);
+  const badge = document.createElement('div');
+  badge.className   = 'pdf-page-badge';
+  badge.textContent = `ص ${pageNum} / ${total}`;
+  wrap.appendChild(badge);
 
   const canvas = document.createElement('canvas');
   const ctx    = canvas.getContext('2d');
   canvas.width  = viewport.width;
   canvas.height = viewport.height;
-  canvas.style.width  = '100%';
   wrap.appendChild(canvas);
   container.appendChild(wrap);
 
@@ -334,54 +424,52 @@ async function renderPage(pdfDoc, pageNum, container, fileId, total) {
   if (info) info.textContent = `${pageNum} / ${total} صفحة`;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   عرض PDF تدريجياً صفحة بصفحة
-   ═══════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════════
+   عرض PDF تدريجياً صفحة بصفحة باستخدام PDF.js
+   ═══════════════════════════════════════════════════════════════════ */
 async function renderPDFProgressive(fileId, buffer) {
-  const card = document.getElementById('card-' + fileId);
-  card.classList.add('has-viewer');
-
+  const card      = document.getElementById('card-' + fileId);
   const container = document.getElementById('pages-' + fileId);
+  if (!card || !container) return;
+
+  card.classList.add('has-viewer');
   container.innerHTML = '';
 
+  let pdfDoc;
   try {
-    const pdfDoc = await pdfjsLib.getDocument({ data: buffer }).promise;
-    const total  = pdfDoc.numPages;
-
-    for (let i = 1; i <= total; i++) {
-      await renderPage(pdfDoc, i, container, fileId, total);
-      await new Promise(r => setTimeout(r, 30));
-    }
+    pdfDoc = await pdfjsLib.getDocument({ data: buffer }).promise;
   } catch (e) {
-    container.innerHTML = `<div class="pdf-loading-msg" style="color:var(--red);">❌ تعذّر عرض PDF: ${e.message}</div>`;
+    container.innerHTML = `
+      <div class="pdf-msg">
+        <span class="pdf-msg-icon">❌</span>
+        <span>تعذّر قراءة ملف PDF</span>
+        <span style="font-size:11px;color:var(--red);">${e.message}</span>
+      </div>`;
+    return;
+  }
+
+  const total = pdfDoc.numPages;
+  const info  = document.getElementById('pages-info-' + fileId);
+  if (info) info.textContent = `0 / ${total} صفحة`;
+
+  for (let i = 1; i <= total; i++) {
+    await renderPage(pdfDoc, i, container, fileId, total);
+    /* تأخير صغير بين الصفحات يتيح رؤية التحميل التدريجي */
+    await new Promise(r => setTimeout(r, 40));
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   العرض البديل — iframe من Google Drive
-   ═══════════════════════════════════════════════════════════════ */
-function showIframeViewer(fileId, previewUrl) {
-  const card = document.getElementById('card-' + fileId);
-  card.classList.add('has-viewer');
-
-  const container = document.getElementById('pages-' + fileId);
-  container.style.padding = '0';
-  container.style.maxHeight = 'none';
-  container.innerHTML = `
-    <iframe class="pdf-iframe-viewer"
-      src="${previewUrl}&embedded=true"
-      allow="autoplay">
-    </iframe>`;
-
-  const info = document.getElementById('pages-info-' + fileId);
-  if (info) info.textContent = 'عارض Google Drive';
+/* ═══════════════════════════════════════════════════════════════════
+   تحميل الملف مع تتبع التقدم اللحظي
+   ═══════════════════════════════════════════════════════════════════ */
+function formatBytes(b) {
+  if (b < 1024)    return b + ' B';
+  if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+  return (b / 1048576).toFixed(1) + ' MB';
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   تحميل الملف الرئيسي — fetch مع تتبع التقدم
-   ═══════════════════════════════════════════════════════════════ */
 async function fetchWithProgress(fileId, url) {
-  const response = await fetch(url, { mode: 'cors', redirect: 'follow' });
+  const response = await fetch(url, { redirect: 'follow' });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
   const contentLength = response.headers.get('Content-Length');
@@ -391,33 +479,69 @@ async function fetchWithProgress(fileId, url) {
   const chunks = [];
   let received = 0;
 
+  /* قراءة الستريم chunk بـ chunk مع تحديث شريط التقدم */
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
     chunks.push(value);
     received += value.length;
 
-    const pct = total > 0
-      ? (received / total) * 100
-      : Math.min(95, received / 50000);
-    setProgress(fileId, pct, `جارٍ التحميل… ${formatBytes(received)}`);
+    if (total > 0) {
+      setProgress(fileId, (received / total) * 100,
+        `جارٍ التحميل… ${formatBytes(received)} / ${formatBytes(total)}`);
+    } else {
+      setProgress(fileId, 0,
+        `جارٍ التحميل… ${formatBytes(received)}`, true);
+    }
   }
 
-  const buffer = new Uint8Array(received);
+  /* دمج الـ chunks في ArrayBuffer واحد */
+  const merged = new Uint8Array(received);
   let pos = 0;
-  for (const chunk of chunks) { buffer.set(chunk, pos); pos += chunk.length; }
-  return buffer.buffer;
+  for (const chunk of chunks) { merged.set(chunk, pos); pos += chunk.length; }
+  return merged.buffer;
 }
 
-function formatBytes(b) {
-  if (b < 1024)        return b + ' B';
-  if (b < 1048576)     return (b / 1024).toFixed(1) + ' KB';
-  return (b / 1048576).toFixed(1) + ' MB';
+/* ═══════════════════════════════════════════════════════════════════
+   فتح ملف موجود محلياً (زر "مكتمل")
+   ═══════════════════════════════════════════════════════════════════ */
+async function openExistingPDF(fileId) {
+  const card = document.getElementById('card-' + fileId);
+  if (card.classList.contains('has-viewer')) {
+    closeViewer(fileId);
+    return;
+  }
+
+  const container = document.getElementById('pages-' + fileId);
+  container.innerHTML = `
+    <div class="pdf-msg">
+      <span class="pdf-msg-icon">📂</span>
+      <span>جارٍ تحميل الملف…</span>
+    </div>`;
+  card.classList.add('has-viewer');
+
+  const buffer = await storageLoad(fileId);
+  if (!buffer) {
+    container.innerHTML = `
+      <div class="pdf-msg">
+        <span class="pdf-msg-icon">⚠️</span>
+        <span>الملف غير موجود، حاول التحميل مجدداً</span>
+      </div>`;
+    return;
+  }
+  await renderPDFProgressive(fileId, buffer);
 }
 
-/* ═══════════════════════════════════════════════════════════════
+function closeViewer(fileId) {
+  const card      = document.getElementById('card-' + fileId);
+  const container = document.getElementById('pages-' + fileId);
+  card.classList.remove('has-viewer');
+  container.innerHTML = '';
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    الدالة الرئيسية للتحميل
-   ═══════════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════════════ */
 async function startDownload(fileId) {
   if (fileState[fileId] === 'downloading') return;
   fileState[fileId] = 'downloading';
@@ -428,63 +552,68 @@ async function startDownload(fileId) {
   setCardState(fileId, 'downloading');
   setProgress(fileId, 0, 'جارٍ التحميل…');
 
-  /* 1. تحقق من الكاش أولاً */
-  const cached = await loadFromCache(fileId);
+  /* ── 1. هل الملف محفوظ مسبقاً؟ ─────────────────────────── */
+  const cached = await storageLoad(fileId);
   if (cached) {
     setProgress(fileId, 100, '✅ محفوظ محلياً');
-    setCardState(fileId, 'done', '✅ محفوظ محلياً');
+    setCardState(fileId, 'done', '✅ محفوظ محلياً — اضغط لفتح');
     fileState[fileId] = 'done';
     await renderPDFProgressive(fileId, cached);
+    showToast('📂 تم فتح الملف من التخزين المحلي');
     return;
   }
 
-  /* 2. حاول تحميل الملف مع تتبع التقدم */
-  let buffer = null;
+  /* ── 2. تحميل الملف (fetch يعمل بدون CORS في native) ────── */
+  let buffer;
   try {
     buffer = await fetchWithProgress(fileId, f.downloadUrl);
-    setProgress(fileId, 100, '✅ اكتمل التحميل');
-    setCardState(fileId, 'done', '✅ اكتمل التحميل');
-    fileState[fileId] = 'done';
-
-    await saveToCache(fileId, buffer);
-    await renderPDFProgressive(fileId, buffer);
-
   } catch (err) {
-    /* 3. CORS أو شبكة: احفظ الملف عبر رابط مباشر وافتح العارض المضمّن */
-    console.warn('fetch failed, using fallback:', err.message);
-
-    setProgress(fileId, 100, '⬇ يُحمَّل عبر المتصفح');
-    setCardState(fileId, 'done', '⬇ يُحمَّل عبر المتصفح');
-    fileState[fileId] = 'done';
-
-    /* تحميل الملف عبر رابط <a> مخفي */
-    const a = document.createElement('a');
-    a.href = f.downloadUrl;
-    a.download = f.name + '.pdf';
-    a.target = '_blank';
-    a.rel = 'noopener';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-
-    /* فتح العارض المضمّن من Google Drive */
-    showIframeViewer(fileId, f.previewUrl);
+    console.error('Download failed:', err);
+    setProgress(fileId, 0, '❌ فشل التحميل: ' + err.message);
+    setCardState(fileId, 'error', '❌ ' + err.message);
+    fileState[fileId] = 'error';
+    Haptics.error();
+    return;
   }
+
+  /* ── 3. حفظ الملف محلياً عبر Capacitor Filesystem ──────── */
+  setProgress(fileId, 100, '💾 جارٍ الحفظ محلياً…');
+  await storageSave(fileId, buffer);
+
+  setProgress(fileId, 100, '✅ اكتمل التحميل والحفظ');
+  setCardState(fileId, 'done', '✅ محفوظ — اضغط لفتح');
+  fileState[fileId] = 'done';
+  Haptics.success();
+  showToast('✅ تم تحميل الملف وحفظه بنجاح');
+
+  /* ── 4. عرض PDF تدريجياً صفحة بصفحة ───────────────────── */
+  await renderPDFProgressive(fileId, buffer);
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   بناء الصفحة
-   ═══════════════════════════════════════════════════════════════ */
-function init() {
-  const list = document.getElementById('files-list');
-  list.innerHTML = PDF_FILES.map(buildFileCard).join('');
+/* ═══════════════════════════════════════════════════════════════════
+   التهيئة
+   ═══════════════════════════════════════════════════════════════════ */
+async function init() {
+  document.getElementById('files-list').innerHTML =
+    PDF_FILES.map(buildFileCard).join('');
   renderBottomNav('files');
 
-  /* مؤشر الشبكة */
-  isOnline().then(online => {
-    const dot = document.getElementById('net-dot');
-    if (dot) dot.classList.toggle('online', online);
-  });
+  const online = await isOnline();
+  const dot = document.getElementById('net-dot');
+  if (dot) dot.classList.toggle('online', online);
+
+  /* تحقق من الملفات المحفوظة مسبقاً وعدّل الأزرار */
+  for (const f of PDF_FILES) {
+    const exists = isNative()
+      ? await fsFileExists(f.id + '.pdf')
+      : await cacheLoad(f.id).then(r => !!r);
+
+    if (exists) {
+      fileState[f.id] = 'done';
+      setProgress(f.id, 100, '✅ محفوظ محلياً');
+      setCardState(f.id, 'done', '✅ محفوظ — اضغط لفتح');
+    }
+  }
 }
 
 init();
