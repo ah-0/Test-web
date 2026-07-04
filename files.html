@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>الملفات — AQB EDU</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <style>
+    /* ── File Card ── */
+    .file-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: border-color .2s;
+    }
+    .file-card.downloading { border-color: var(--blue); }
+    .file-card.done        { border-color: var(--green); }
+    .file-card.error       { border-color: var(--red); }
+
+    .file-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 16px;
+    }
+    .file-icon {
+      width: 46px; height: 46px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; flex-shrink: 0;
+    }
+    .file-meta { flex: 1; min-width: 0; }
+    .file-name { font-size: 14px; font-weight: 700; }
+    .file-subject { font-size: 12px; color: var(--muted); margin-top: 3px; }
+
+    /* ── Download Button ── */
+    .btn-dl {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--blue2); color: #fff;
+      border: none; border-radius: 10px;
+      padding: 9px 14px; font-size: 13px; font-weight: 700;
+      cursor: pointer; transition: background .15s, opacity .15s;
+      white-space: nowrap; flex-shrink: 0;
+      font-family: inherit;
+    }
+    .btn-dl:active { opacity: .8; }
+    .btn-dl:disabled { background: var(--surface); color: var(--muted); cursor: default; }
+    .btn-dl.done { background: #14532d; color: var(--green); }
+    .btn-dl.error { background: #450a0a; color: var(--red); }
+
+    /* ── Progress Section ── */
+    .file-progress {
+      padding: 0 16px 14px;
+      display: none;
+    }
+    .file-card.downloading .file-progress,
+    .file-card.done .file-progress,
+    .file-card.error .file-progress { display: block; }
+
+    .progress-row {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .progress-status { font-size: 12px; color: var(--muted); }
+    .progress-pct { font-size: 13px; font-weight: 700; color: var(--blue-l); }
+    .file-card.done  .progress-pct { color: var(--green); }
+    .file-card.error .progress-pct { color: var(--red); }
+
+    .progress-track {
+      width: 100%; height: 8px; background: var(--surface);
+      border-radius: 100px; overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, var(--blue2), var(--blue-l));
+      border-radius: 100px;
+      transition: width .3s ease;
+    }
+    .file-card.done  .progress-fill { background: var(--green); width: 100% !important; }
+    .file-card.error .progress-fill { background: var(--red); }
+
+    /* ── PDF Viewer ── */
+    .pdf-viewer-wrap {
+      border-top: 1px solid var(--border);
+      display: none;
+    }
+    .file-card.has-viewer .pdf-viewer-wrap { display: block; }
+
+    .pdf-toolbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 16px; background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    .pdf-toolbar-title { font-size: 12px; color: var(--muted); font-weight: 600; }
+    .pdf-pages-info { font-size: 12px; color: var(--blue-l); font-weight: 700; }
+
+    .pdf-pages-container {
+      padding: 12px;
+      display: flex; flex-direction: column; gap: 8px;
+      max-height: 520px; overflow-y: auto;
+      background: #1a1a2e;
+    }
+    .pdf-page-wrap {
+      position: relative; background: #fff;
+      border-radius: 6px; overflow: hidden;
+      box-shadow: 0 2px 12px rgba(0,0,0,.5);
+      animation: pageFadeIn .35s ease;
+    }
+    @keyframes pageFadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .pdf-page-wrap canvas { display: block; width: 100%; }
+
+    .pdf-page-num {
+      position: absolute; top: 6px; right: 8px;
+      background: rgba(0,0,0,.55); color: #fff;
+      font-size: 11px; padding: 2px 7px; border-radius: 20px;
+    }
+
+    .pdf-loading-msg {
+      text-align: center; padding: 28px 16px;
+      font-size: 13px; color: var(--muted);
+    }
+
+    /* ── Iframe fallback viewer ── */
+    .pdf-iframe-viewer {
+      width: 100%; height: 480px; border: none;
+      display: block;
+    }
+
+    /* ── Open button ── */
+    .view-toggle-btn {
+      display: flex; align-items: center; gap: 6px;
+      width: calc(100% - 32px); margin: 0 16px 14px;
+      background: var(--surface); color: var(--blue-l);
+      border: 1px solid var(--border); border-radius: 10px;
+      padding: 10px; font-size: 13px; font-weight: 700;
+      cursor: pointer; font-family: inherit; justify-content: center;
+      transition: background .15s;
+    }
+    .view-toggle-btn:active { background: var(--card); }
+  </style>
+</head>
+<body class="page">
+
+<div class="topbar">
+  <span class="topbar-icon">📁</span>
+  <h1>الملفات الدراسية</h1>
+  <div class="topbar-right">
+    <span class="net-dot" id="net-dot"></span>
+  </div>
+</div>
+
+<div class="scroll">
+  <div class="section-label">الكتب والمراجع</div>
+  <div id="files-list"></div>
+</div>
+
+<nav class="bottom-nav" id="bottom-nav"></nav>
+
+<script src="js/app.js"></script>
+<script>
+'use strict';
+
+/* ═══════════════════════════════════════════════════════════════
+   ملف الإعدادات — أضف ملفات PDF جديدة هنا فقط
+   ═══════════════════════════════════════════════════════════════ */
+const PDF_FILES = [
+  {
+    id: 'algebra9',
+    name: 'كتاب الجبر للصف التاسع',
+    subject: 'الرياضيات',
+    icon: '🔢',
+    color: '#1e3a5f',
+    downloadUrl: 'https://drive.google.com/uc?export=download&id=1CXp06PR3YMi-tNISvNXdbsGFldwt8X0z',
+    previewUrl:  'https://drive.google.com/file/d/1CXp06PR3YMi-tNISvNXdbsGFldwt8X0z/preview',
+    fileId:      '1CXp06PR3YMi-tNISvNXdbsGFldwt8X0z',
+  },
+  /* ── مثال لإضافة ملف جديد:
+  {
+    id: 'physics10',
+    name: 'كتاب الفيزياء للصف العاشر',
+    subject: 'العلوم',
+    icon: '⚡',
+    color: '#14532d',
+    downloadUrl: 'https://...',
+    previewUrl:  'https://drive.google.com/file/d/FILE_ID/preview',
+    fileId:      'FILE_ID',
+  },
+  ── */
+];
+
+/* ═══════════════════════════════════════════════════════════════
+   إعداد PDF.js
+   ═══════════════════════════════════════════════════════════════ */
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+/* ═══════════════════════════════════════════════════════════════
+   حالة كل ملف
+   ═══════════════════════════════════════════════════════════════ */
+const fileState = {};
+
+/* ═══════════════════════════════════════════════════════════════
+   Cache API — للتخزين بدون إنترنت
+   ═══════════════════════════════════════════════════════════════ */
+const CACHE_NAME = 'aqb-files-v1';
+
+async function saveToCache(fileId, buffer) {
+  try {
+    const cache = await caches.open(CACHE_NAME);
+    const blob = new Blob([buffer], { type: 'application/pdf' });
+    const resp = new Response(blob, { headers: { 'Content-Type': 'application/pdf' } });
+    await cache.put('pdf:' + fileId, resp);
+  } catch (e) { /* Cache API غير متاح */ }
+}
+
+async function loadFromCache(fileId) {
+  try {
+    const cache = await caches.open(CACHE_NAME);
+    const resp = await cache.match('pdf:' + fileId);
+    if (!resp) return null;
+    return await resp.arrayBuffer();
+  } catch { return null; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   بناء HTML لكل بطاقة ملف
+   ═══════════════════════════════════════════════════════════════ */
+function buildFileCard(f) {
+  return `
+  <div class="file-card" id="card-${f.id}">
+    <div class="file-header">
+      <div class="file-icon" style="background:${f.color}30;border:1px solid ${f.color}60;">
+        ${f.icon}
+      </div>
+      <div class="file-meta">
+        <div class="file-name">${f.name}</div>
+        <div class="file-subject">${f.subject}</div>
+      </div>
+      <button class="btn-dl" id="btn-${f.id}" onclick="startDownload('${f.id}')">
+        ⬇ تحميل
+      </button>
+    </div>
+
+    <div class="file-progress" id="prog-${f.id}">
+      <div class="progress-row">
+        <span class="progress-status" id="status-${f.id}">جارٍ التحميل…</span>
+        <span class="progress-pct"   id="pct-${f.id}">0%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="fill-${f.id}"></div>
+      </div>
+    </div>
+
+    <div class="pdf-viewer-wrap" id="viewer-wrap-${f.id}">
+      <div class="pdf-toolbar">
+        <span class="pdf-toolbar-title">📄 عارض PDF</span>
+        <span class="pdf-pages-info" id="pages-info-${f.id}"></span>
+      </div>
+      <div class="pdf-pages-container" id="pages-${f.id}">
+        <div class="pdf-loading-msg">⏳ جارٍ تجهيز العارض…</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   تحديث واجهة شريط التقدم
+   ═══════════════════════════════════════════════════════════════ */
+function setProgress(fileId, pct, statusText) {
+  const card   = document.getElementById('card-'   + fileId);
+  const fill   = document.getElementById('fill-'   + fileId);
+  const pctEl  = document.getElementById('pct-'    + fileId);
+  const statEl = document.getElementById('status-' + fileId);
+  if (!card) return;
+  fill.style.width  = pct + '%';
+  pctEl.textContent = Math.round(pct) + '%';
+  if (statusText) statEl.textContent = statusText;
+}
+
+function setCardState(fileId, state, statusText) {
+  const card = document.getElementById('card-' + fileId);
+  const btn  = document.getElementById('btn-'  + fileId);
+  if (!card) return;
+  card.classList.remove('downloading', 'done', 'error');
+  card.classList.add(state);
+
+  const labels = {
+    downloading: '⏸ جارٍ التحميل',
+    done:  '✓ مكتمل',
+    error: '↺ إعادة المحاولة',
+  };
+  btn.textContent = labels[state] || '⬇ تحميل';
+  btn.disabled = (state === 'downloading');
+  if (state === 'error') {
+    btn.disabled = false;
+    btn.onclick = () => startDownload(fileId);
+  }
+  if (statusText) {
+    const statEl = document.getElementById('status-' + fileId);
+    if (statEl) statEl.textContent = statusText;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   رسم صفحة PDF واحدة
+   ═══════════════════════════════════════════════════════════════ */
+async function renderPage(pdfDoc, pageNum, container, fileId, total) {
+  const page     = await pdfDoc.getPage(pageNum);
+  const viewport = page.getViewport({ scale: window.devicePixelRatio > 1 ? 1.5 : 1.2 });
+
+  const wrap   = document.createElement('div');
+  wrap.className = 'pdf-page-wrap';
+
+  const numLabel = document.createElement('div');
+  numLabel.className = 'pdf-page-num';
+  numLabel.textContent = 'ص ' + pageNum;
+  wrap.appendChild(numLabel);
+
+  const canvas = document.createElement('canvas');
+  const ctx    = canvas.getContext('2d');
+  canvas.width  = viewport.width;
+  canvas.height = viewport.height;
+  canvas.style.width  = '100%';
+  wrap.appendChild(canvas);
+  container.appendChild(wrap);
+
+  await page.render({ canvasContext: ctx, viewport }).promise;
+
+  const info = document.getElementById('pages-info-' + fileId);
+  if (info) info.textContent = `${pageNum} / ${total} صفحة`;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   عرض PDF تدريجياً صفحة بصفحة
+   ═══════════════════════════════════════════════════════════════ */
+async function renderPDFProgressive(fileId, buffer) {
+  const card = document.getElementById('card-' + fileId);
+  card.classList.add('has-viewer');
+
+  const container = document.getElementById('pages-' + fileId);
+  container.innerHTML = '';
+
+  try {
+    const pdfDoc = await pdfjsLib.getDocument({ data: buffer }).promise;
+    const total  = pdfDoc.numPages;
+
+    for (let i = 1; i <= total; i++) {
+      await renderPage(pdfDoc, i, container, fileId, total);
+      await new Promise(r => setTimeout(r, 30));
+    }
+  } catch (e) {
+    container.innerHTML = `<div class="pdf-loading-msg" style="color:var(--red);">❌ تعذّر عرض PDF: ${e.message}</div>`;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   العرض البديل — iframe من Google Drive
+   ═══════════════════════════════════════════════════════════════ */
+function showIframeViewer(fileId, previewUrl) {
+  const card = document.getElementById('card-' + fileId);
+  card.classList.add('has-viewer');
+
+  const container = document.getElementById('pages-' + fileId);
+  container.style.padding = '0';
+  container.style.maxHeight = 'none';
+  container.innerHTML = `
+    <iframe class="pdf-iframe-viewer"
+      src="${previewUrl}&embedded=true"
+      allow="autoplay">
+    </iframe>`;
+
+  const info = document.getElementById('pages-info-' + fileId);
+  if (info) info.textContent = 'عارض Google Drive';
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   تحميل الملف الرئيسي — fetch مع تتبع التقدم
+   ═══════════════════════════════════════════════════════════════ */
+async function fetchWithProgress(fileId, url) {
+  const response = await fetch(url, { mode: 'cors', redirect: 'follow' });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+  const contentLength = response.headers.get('Content-Length');
+  const total = contentLength ? parseInt(contentLength, 10) : 0;
+
+  const reader = response.body.getReader();
+  const chunks = [];
+  let received = 0;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    received += value.length;
+
+    const pct = total > 0
+      ? (received / total) * 100
+      : Math.min(95, received / 50000);
+    setProgress(fileId, pct, `جارٍ التحميل… ${formatBytes(received)}`);
+  }
+
+  const buffer = new Uint8Array(received);
+  let pos = 0;
+  for (const chunk of chunks) { buffer.set(chunk, pos); pos += chunk.length; }
+  return buffer.buffer;
+}
+
+function formatBytes(b) {
+  if (b < 1024)        return b + ' B';
+  if (b < 1048576)     return (b / 1024).toFixed(1) + ' KB';
+  return (b / 1048576).toFixed(1) + ' MB';
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   الدالة الرئيسية للتحميل
+   ═══════════════════════════════════════════════════════════════ */
+async function startDownload(fileId) {
+  if (fileState[fileId] === 'downloading') return;
+  fileState[fileId] = 'downloading';
+
+  const f = PDF_FILES.find(x => x.id === fileId);
+  if (!f) return;
+
+  setCardState(fileId, 'downloading');
+  setProgress(fileId, 0, 'جارٍ التحميل…');
+
+  /* 1. تحقق من الكاش أولاً */
+  const cached = await loadFromCache(fileId);
+  if (cached) {
+    setProgress(fileId, 100, '✅ محفوظ محلياً');
+    setCardState(fileId, 'done', '✅ محفوظ محلياً');
+    fileState[fileId] = 'done';
+    await renderPDFProgressive(fileId, cached);
+    return;
+  }
+
+  /* 2. حاول تحميل الملف مع تتبع التقدم */
+  let buffer = null;
+  try {
+    buffer = await fetchWithProgress(fileId, f.downloadUrl);
+    setProgress(fileId, 100, '✅ اكتمل التحميل');
+    setCardState(fileId, 'done', '✅ اكتمل التحميل');
+    fileState[fileId] = 'done';
+
+    await saveToCache(fileId, buffer);
+    await renderPDFProgressive(fileId, buffer);
+
+  } catch (err) {
+    /* 3. CORS أو شبكة: احفظ الملف عبر رابط مباشر وافتح العارض المضمّن */
+    console.warn('fetch failed, using fallback:', err.message);
+
+    setProgress(fileId, 100, '⬇ يُحمَّل عبر المتصفح');
+    setCardState(fileId, 'done', '⬇ يُحمَّل عبر المتصفح');
+    fileState[fileId] = 'done';
+
+    /* تحميل الملف عبر رابط <a> مخفي */
+    const a = document.createElement('a');
+    a.href = f.downloadUrl;
+    a.download = f.name + '.pdf';
+    a.target = '_blank';
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    /* فتح العارض المضمّن من Google Drive */
+    showIframeViewer(fileId, f.previewUrl);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   بناء الصفحة
+   ═══════════════════════════════════════════════════════════════ */
+function init() {
+  const list = document.getElementById('files-list');
+  list.innerHTML = PDF_FILES.map(buildFileCard).join('');
+  renderBottomNav('files');
+
+  /* مؤشر الشبكة */
+  isOnline().then(online => {
+    const dot = document.getElementById('net-dot');
+    if (dot) dot.classList.toggle('online', online);
+  });
+}
+
+init();
+</script>
+</body>
+</html>

@@ -191,7 +191,7 @@ function renderBottomNav(active) {
   const items = [
     { id: 'home',       icon: '🏠', label: 'الرئيسية',  href: 'index.html' },
     { id: 'courses',    icon: '📚', label: 'المواد',     href: 'courses.html' },
-    { id: 'schedule',   icon: '📅', label: 'الجدول',     href: 'schedule.html' },
+    { id: 'files',      icon: '📁', label: 'الملفات',    href: 'files.html' },
     { id: 'flashcards', icon: '🃏', label: 'البطاقات',   href: 'flashcards.html' },
     { id: 'profile',    icon: '👤', label: 'ملفي',       href: 'profile.html' },
   ];
