@@ -141,6 +141,29 @@
       display: flex; flex-direction: column; align-items: center; gap: 8px;
     }
     .pdf-msg .pdf-msg-icon { font-size: 28px; }
+
+    /* ── Error Box ───────────────────────────────────────────── */
+    .error-box {
+      display: none;
+      margin: 0 16px 14px;
+      background: #1a0505; border: 1px solid #7f1d1d;
+      border-radius: 10px; padding: 12px 14px;
+    }
+    .file-card.error .error-box { display: block; }
+    .error-box-title {
+      font-size: 13px; font-weight: 700; color: var(--red);
+      margin-bottom: 6px; display: flex; align-items: center; gap: 6px;
+    }
+    .error-box-msg {
+      font-size: 12px; color: #fca5a5;
+      font-family: 'Courier New', monospace; direction: ltr;
+      word-break: break-all; white-space: pre-wrap;
+    }
+    .error-box-steps {
+      margin-top: 8px; font-size: 12px; color: #fca5a5;
+      line-height: 1.7; list-style: none; padding: 0;
+    }
+    .error-box-steps li::before { content: "• "; color: var(--red); }
   </style>
 </head>
 <body class="page">
@@ -246,7 +269,6 @@ async function fsSave(filename, arrayBuffer) {
     });
     return true;
   } catch (e) {
-    console.error('Filesystem.writeFile failed:', e);
     return false;
   }
 }
@@ -328,6 +350,12 @@ function buildFileCard(f) {
       </div>
     </div>
 
+    <div class="error-box" id="err-${f.id}">
+      <div class="error-box-title">⛔ تفاصيل الخطأ</div>
+      <div class="error-box-msg" id="err-msg-${f.id}"></div>
+      <ul class="error-box-steps" id="err-steps-${f.id}"></ul>
+    </div>
+
     <div class="pdf-viewer-wrap" id="viewer-wrap-${f.id}">
       <div class="pdf-toolbar">
         <span class="pdf-toolbar-title">📄 عارض PDF</span>
@@ -392,6 +420,23 @@ function setCardState(fileId, state, statusText) {
     const statEl = document.getElementById('status-' + fileId);
     if (statEl) statEl.textContent = statusText;
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   عرض الخطأ على الشاشة (بدلاً من console)
+   ═══════════════════════════════════════════════════════════════════ */
+function showError(fileId, message, steps = []) {
+  const msgEl   = document.getElementById('err-msg-'   + fileId);
+  const stepsEl = document.getElementById('err-steps-' + fileId);
+  if (msgEl)   msgEl.textContent = message;
+  if (stepsEl) stepsEl.innerHTML = steps.map(s => `<li>${s}</li>`).join('');
+}
+
+function clearError(fileId) {
+  const msgEl   = document.getElementById('err-msg-'   + fileId);
+  const stepsEl = document.getElementById('err-steps-' + fileId);
+  if (msgEl)   msgEl.textContent = '';
+  if (stepsEl) stepsEl.innerHTML = '';
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -618,12 +663,13 @@ async function startDownload(fileId) {
    */
   let buffer;
 
+  clearError(fileId);
+
   /* — محاولة الطبقة 1 — */
   try {
     setProgress(fileId, 0, 'جارٍ الاتصال…');
     buffer = await fetchStreamWithProgress(fileId, f.downloadUrl);
   } catch (err1) {
-    console.warn('طبقة 1 فشلت (fetch):', err1.message);
 
     /* — محاولة الطبقة 2 (native فقط) — */
     if (isNative()) {
@@ -631,19 +677,29 @@ async function startDownload(fileId) {
         setProgress(fileId, 0, 'جارٍ التحميل عبر النظام…');
         buffer = await capHttpDownload(fileId, f.downloadUrl);
       } catch (err2) {
-        console.error('طبقة 2 فشلت (CapacitorHttp):', err2.message);
         setProgress(fileId, 0, '❌ فشل التحميل');
-        setCardState(fileId, 'error', '❌ تأكد من الاتصال وحاول مجدداً');
+        setCardState(fileId, 'error', '❌ تعذّر التحميل');
+        showError(fileId,
+          'fetch: ' + err1.message + '\nCapacitorHttp: ' + err2.message,
+          ['تحقق من اتصال الإنترنت', 'تأكد أن الرابط لا يزال صالحاً', 'أعد المحاولة']
+        );
         fileState[fileId] = 'error';
         Haptics.error();
         return;
       }
     } else {
       /* ويب: CORS يمنع التحميل */
-      setProgress(fileId, 0, '⚠️ مطلوب تطبيق native');
-      setCardState(fileId, 'error', '⚠️ هذه الميزة تعمل في تطبيق iOS/Android');
+      setProgress(fileId, 0, '⚠️ تعذّر الاتصال بالخادم');
+      setCardState(fileId, 'error', '⚠️ فشل التحميل');
+      showError(fileId,
+        err1.message,
+        [
+          'السبب المحتمل: الخادم يمنع الطلب (CORS)',
+          'هذه الميزة تعمل بشكل كامل في تطبيق iOS/Android',
+          'في المتصفح يجب أن يدعم الخادم CORS',
+        ]
+      );
       fileState[fileId] = 'error';
-      showToast('⚠️ التحميل يعمل في التطبيق الأصيل فقط');
       return;
     }
   }
