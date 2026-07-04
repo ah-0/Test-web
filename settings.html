@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>الإعدادات — AQB EDU</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .settings-group { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .settings-group + .settings-group { margin-top: 0; }
+    .group-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 6px; padding: 0 2px; }
+    .app-info-card {
+      background: linear-gradient(135deg, #1e3a5f 0%, #0d1b35 100%);
+      border: 1px solid var(--blue); border-radius: var(--radius);
+      padding: 24px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px;
+    }
+    .app-logo { font-size: 56px; }
+    .app-name  { font-size: 22px; font-weight: 800; color: var(--blue-l); }
+    .app-ver   { font-size: 12px; color: var(--muted); }
+  </style>
+</head>
+<body class="page">
+<div class="topbar">
+  <a href="javascript:history.back()" style="font-size:22px;text-decoration:none;">←</a>
+  <h1>الإعدادات</h1>
+</div>
+
+<div class="scroll">
+
+  <!-- App info -->
+  <div class="app-info-card">
+    <div class="app-logo">🎓</div>
+    <div class="app-name">AQB EDU</div>
+    <div class="app-ver">الإصدار 2.0.0 · تطبيق تعليمي شامل</div>
+    <div style="display:flex;gap:8px;margin-top:4px;">
+      <span class="badge badge-blue">Capacitor 6</span>
+      <span class="badge badge-green">Native Ready</span>
+    </div>
+  </div>
+
+  <!-- Notifications -->
+  <div class="group-label">الإشعارات</div>
+  <div class="settings-group">
+    <div class="setting-row" onclick="location.href='notifications.html'">
+      <span class="sr-icon">🔔</span>
+      <div class="sr-body">
+        <div class="sr-title">إعدادات الإشعارات</div>
+        <div class="sr-sub">تذكيرات يومية وتنبيهات الجدول</div>
+      </div>
+      <span class="sr-right">›</span>
+    </div>
+    <div class="setting-row" onclick="testNotif()">
+      <span class="sr-icon">🧪</span>
+      <div class="sr-body">
+        <div class="sr-title">اختبار الإشعارات</div>
+        <div class="sr-sub">إرسال إشعار تجريبي خلال 5 ثوانٍ</div>
+      </div>
+      <span class="sr-right">›</span>
+    </div>
+  </div>
+
+  <!-- Study preferences -->
+  <div class="group-label">تفضيلات الدراسة</div>
+  <div class="settings-group">
+    <div class="setting-row">
+      <span class="sr-icon">🔀</span>
+      <div class="sr-body">
+        <div class="sr-title">خلط الأسئلة</div>
+        <div class="sr-sub">ترتيب عشوائي في كل اختبار</div>
+      </div>
+      <label class="toggle" onclick="event.stopPropagation()">
+        <input type="checkbox" id="shuffle-toggle" checked onchange="savePref('shuffle_quiz',this.checked)" />
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="setting-row">
+      <span class="sr-icon">📳</span>
+      <div class="sr-body">
+        <div class="sr-title">الاهتزاز عند الإجابة</div>
+        <div class="sr-sub">تغذية راجعة عند الإجابة الصحيحة والخاطئة</div>
+      </div>
+      <label class="toggle" onclick="event.stopPropagation()">
+        <input type="checkbox" id="haptic-toggle" checked onchange="savePref('haptics_enabled',this.checked)" />
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="setting-row">
+      <span class="sr-icon">⏱️</span>
+      <div class="sr-body">
+        <div class="sr-title">مؤقت الاختبار</div>
+        <div class="sr-sub">عرض الوقت المنقضي أثناء الاختبار</div>
+      </div>
+      <label class="toggle" onclick="event.stopPropagation()">
+        <input type="checkbox" id="timer-toggle" checked onchange="savePref('show_timer',this.checked)" />
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+  </div>
+
+  <!-- My info -->
+  <div class="group-label">معلوماتي</div>
+  <div class="settings-group">
+    <div class="setting-row" onclick="editName()">
+      <span class="sr-icon">👤</span>
+      <div class="sr-body">
+        <div class="sr-title">الاسم</div>
+        <div class="sr-sub" id="display-name">...</div>
+      </div>
+      <span class="sr-right">✏️</span>
+    </div>
+    <div class="setting-row" onclick="editGrade()">
+      <span class="sr-icon">🎓</span>
+      <div class="sr-body">
+        <div class="sr-title">الصف / المستوى</div>
+        <div class="sr-sub" id="display-grade">غير محدد</div>
+      </div>
+      <span class="sr-right">✏️</span>
+    </div>
+    <div class="setting-row" onclick="location.href='profile.html'">
+      <span class="sr-icon">📊</span>
+      <div class="sr-body">
+        <div class="sr-title">عرض الملف الشخصي</div>
+        <div class="sr-sub">نقاطك وإنجازاتك وتقدمك</div>
+      </div>
+      <span class="sr-right">›</span>
+    </div>
+  </div>
+
+  <!-- Share & About -->
+  <div class="group-label">مشاركة وتواصل</div>
+  <div class="settings-group">
+    <div class="setting-row" onclick="shareApp()">
+      <span class="sr-icon">📤</span>
+      <div class="sr-body">
+        <div class="sr-title">مشاركة التطبيق</div>
+        <div class="sr-sub">شارك AQB EDU مع أصدقائك</div>
+      </div>
+      <span class="sr-right">›</span>
+    </div>
+    <div class="setting-row" onclick="location.href='leaderboard.html'">
+      <span class="sr-icon">🏆</span>
+      <div class="sr-body">
+        <div class="sr-title">لوحة المتصدرين</div>
+        <div class="sr-sub">تعرف على ترتيبك بين الطلاب</div>
+      </div>
+      <span class="sr-right">›</span>
+    </div>
+  </div>
+
+  <!-- Danger zone -->
+  <div class="group-label">منطقة الخطر</div>
+  <div class="settings-group">
+    <div class="setting-row" onclick="resetProgress()">
+      <span class="sr-icon">🗑️</span>
+      <div class="sr-body">
+        <div class="sr-title" style="color:var(--yellow);">إعادة تعيين التقدم</div>
+        <div class="sr-sub">حذف نقاطك وسجل الاختبارات</div>
+      </div>
+      <span class="sr-right" style="color:var(--yellow);">›</span>
+    </div>
+    <div class="setting-row" onclick="resetAll()">
+      <span class="sr-icon">⚠️</span>
+      <div class="sr-body">
+        <div class="sr-title" style="color:var(--red);">إعادة ضبط المصنع</div>
+        <div class="sr-sub">حذف جميع البيانات والعودة للبداية</div>
+      </div>
+      <span class="sr-right" style="color:var(--red);">›</span>
+    </div>
+  </div>
+
+  <!-- Version info -->
+  <div style="text-align:center;color:var(--muted);font-size:12px;padding:8px 0;">
+    AQB EDU v2.0.0 · Capacitor 6 · جميع الحقوق محفوظة
+  </div>
+
+</div>
+
+<nav id="bottom-nav"></nav>
+<script src="js/app.js"></script>
+<script>
+async function init() {
+  renderBottomNav('');
+
+  const name  = await Prefs.get('name', 'طالب');
+  const grade = await Prefs.get('grade', 'غير محدد');
+  document.getElementById('display-name').textContent  = name;
+  document.getElementById('display-grade').textContent = grade;
+
+  // Load toggles
+  const prefs = {
+    shuffle_quiz:     await Prefs.get('shuffle_quiz', true),
+    haptics_enabled:  await Prefs.get('haptics_enabled', true),
+    show_timer:       await Prefs.get('show_timer', true),
+  };
+  document.getElementById('shuffle-toggle').checked = prefs.shuffle_quiz;
+  document.getElementById('haptic-toggle').checked  = prefs.haptics_enabled;
+  document.getElementById('timer-toggle').checked   = prefs.show_timer;
+}
+
+async function savePref(key, value) {
+  await Prefs.set(key, value);
+  await Haptics.impact('LIGHT');
+  showToast('✅ تم حفظ الإعداد');
+}
+
+async function editName() {
+  const cur  = await Prefs.get('name', 'طالب');
+  const name = await Dialog.prompt('تغيير الاسم', 'اكتب اسمك الجديد', cur);
+  if (name === null || !name.trim()) return;
+  await Prefs.set('name', name.trim());
+  document.getElementById('display-name').textContent = name.trim();
+  await Haptics.success();
+  showToast('✅ تم حفظ الاسم');
+}
+
+async function editGrade() {
+  const cur   = await Prefs.get('grade', '');
+  const grade = await Dialog.prompt('الصف الدراسي', 'مثال: الصف الثالث الثانوي', cur);
+  if (grade === null) return;
+  await Prefs.set('grade', grade.trim() || 'غير محدد');
+  document.getElementById('display-grade').textContent = grade.trim() || 'غير محدد';
+  await Haptics.success();
+  showToast('✅ تم حفظ الصف');
+}
+
+async function testNotif() {
+  const granted = await Notify.requestPermission();
+  if (!granted) { showToast('❌ الإشعارات غير مسموح بها'); return; }
+  const at = new Date(Date.now() + 5000);
+  await Notify.schedule('🧪 اختبار الإشعارات', 'إشعار AQB EDU يعمل بشكل صحيح! 🎉', at);
+  showToast('✅ سيصل الإشعار خلال 5 ثوانٍ');
+  await Haptics.success();
+}
+
+async function shareApp() {
+  await Share.share(
+    'AQB EDU — تطبيق تعليمي شامل',
+    '🎓 جرّب AQB EDU! تطبيق تعليمي متكامل: اختبارات، بطاقات، جدول دراسي وأكثر.',
+    'https://ah-0.github.io/Test-web/'
+  );
+}
+
+async function resetProgress() {
+  const ok = await Dialog.confirm('إعادة التقدم', 'سيتم حذف نقاطك وعدد اختباراتك وسجل الأيام. هل أنت متأكد؟');
+  if (!ok) return;
+  await Prefs.set('points', 0);
+  await Prefs.set('streak', 0);
+  await Prefs.set('quiz_count', 0);
+  await Prefs.set('streak_day', '');
+  // Clear subject progress
+  ['math','arabic','science','english','history','geo','general'].forEach(id => {
+    localStorage.removeItem('aqb_progress_' + id);
+  });
+  await Haptics.warning();
+  showToast('✅ تم إعادة تعيين التقدم');
+}
+
+async function resetAll() {
+  const ok = await Dialog.confirm(
+    '⚠️ إعادة ضبط المصنع',
+    'سيتم حذف جميع بياناتك نهائياً: الاسم، الجدول، التقدم، الإشعارات. هل تريد المتابعة؟'
+  );
+  if (!ok) return;
+  // Clear all prefs
+  const keys = ['name','grade','points','streak','streak_day','quiz_count','schedule',
+    'courses','onboarded','avatar','notif_morning','notif_evening',
+    'fc_known_math','fc_known_arabic','fc_known_science','fc_known_english','fc_known_general'];
+  for (const k of keys) await Prefs.remove(k);
+  localStorage.clear();
+  await Haptics.error();
+  showToast('تم إعادة الضبط — سيُعاد توجيهك');
+  setTimeout(() => location.href = 'onboarding.html', 1500);
+}
+
+init();
+</script>
+</body>
+</html>

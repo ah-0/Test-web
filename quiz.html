@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>الاختبار — AQB EDU</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .quiz-wrap { padding: 20px 16px; display: flex; flex-direction: column; gap: 16px; min-height: calc(100vh - 130px); }
+    .q-header { display: flex; align-items: center; justify-content: space-between; }
+    .q-counter { font-size: 13px; color: var(--muted); }
+    .q-points  { font-size: 13px; color: var(--yellow); font-weight: 700; }
+    .q-text    { font-size: 16px; font-weight: 700; line-height: 1.6; }
+    .options   { display: flex; flex-direction: column; gap: 10px; }
+    .feedback-wrap {
+      background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 14px; text-align: center; display: none;
+    }
+    .feedback-wrap.correct { border-color: var(--green); background: #14532d22; }
+    .feedback-wrap.wrong   { border-color: var(--red);   background: #ef444422; }
+    .feedback-icon { font-size: 32px; }
+    .feedback-text { font-size: 14px; margin-top: 6px; }
+    /* Results */
+    .result-wrap { display:none; flex-direction:column; align-items:center; gap:20px; padding:40px 24px; text-align:center; }
+    .result-circle {
+      width: 120px; height: 120px; border-radius: 50%;
+      border: 4px solid var(--blue); display: flex; flex-direction: column;
+      align-items: center; justify-content: center; background: var(--blue-d);
+    }
+    .result-pct   { font-size: 30px; font-weight: 900; color: var(--blue-l); }
+    .result-label { font-size: 12px; color: var(--muted); }
+    .result-msg   { font-size: 20px; font-weight: 800; }
+    .result-sub   { font-size: 14px; color: var(--muted); }
+  </style>
+</head>
+<body class="page">
+<div class="topbar">
+  <a href="javascript:history.back()" style="font-size:22px;text-decoration:none;">←</a>
+  <h1 id="quiz-title">اختبار</h1>
+  <div id="quiz-timer" style="font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;font-family:monospace;"></div>
+</div>
+
+<!-- Quiz screen -->
+<div class="quiz-wrap" id="quiz-screen">
+  <div class="q-header">
+    <span class="q-counter" id="q-counter">سؤال 1 / 10</span>
+    <span class="q-points" id="q-points">0 نقطة</span>
+  </div>
+  <div class="progress-wrap"><div class="progress-bar" id="q-progress" style="width:0%"></div></div>
+  <div class="q-text" id="q-text"></div>
+  <div class="options" id="options"></div>
+  <div class="feedback-wrap" id="feedback">
+    <div class="feedback-icon" id="fb-icon"></div>
+    <div class="feedback-text" id="fb-text"></div>
+    <button class="btn btn-blue" style="margin-top:12px;" onclick="nextQuestion()">التالي →</button>
+  </div>
+</div>
+
+<!-- Results screen -->
+<div class="result-wrap" id="result-screen">
+  <div class="result-circle">
+    <div class="result-pct" id="r-pct">0%</div>
+    <div class="result-label">نتيجتك</div>
+  </div>
+  <div>
+    <div class="result-msg" id="r-msg"></div>
+    <div class="result-sub" id="r-sub" style="margin-top:6px;"></div>
+  </div>
+  <div class="stats-row" style="width:100%;">
+    <div class="stat-card"><div class="stat-val" id="r-correct">0</div><div class="stat-label">صحيح ✅</div></div>
+    <div class="stat-card"><div class="stat-val" id="r-wrong">0</div><div class="stat-label">خطأ ❌</div></div>
+    <div class="stat-card"><div class="stat-val" id="r-points">0</div><div class="stat-label">نقاط 🏆</div></div>
+  </div>
+  <div style="width:100%;display:flex;flex-direction:column;gap:10px;">
+    <button class="btn btn-blue btn-full" onclick="shareResult()">📤 مشاركة النتيجة</button>
+    <button class="btn btn-green btn-full" onclick="retryQuiz()">🔄 إعادة المحاولة</button>
+    <a href="index.html" class="btn btn-ghost btn-full">🏠 الرئيسية</a>
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+<script>
+// ── Questions bank ────────────────────────────────────────────
+const QUESTIONS = {
+  math: [
+    { q:'كم ناتج 7 × 8؟', opts:['54','56','63','64'], a:1 },
+    { q:'ما هي قيمة √144؟', opts:['11','12','13','14'], a:1 },
+    { q:'حل المعادلة: 2x + 6 = 14', opts:['x=3','x=4','x=5','x=6'], a:1 },
+    { q:'ما مساحة مستطيل طوله 8 وعرضه 5؟', opts:['30','35','40','45'], a:2 },
+    { q:'ما هو عدد الأضلاع في المثلث؟', opts:['2','3','4','5'], a:1 },
+    { q:'ما ناتج 15² ؟', opts:['175','200','225','250'], a:2 },
+    { q:'ما قيمة π تقريباً؟', opts:['3.14','3.16','3.18','3.20'], a:0 },
+    { q:'كم يساوي 2⁵ ؟', opts:['16','32','64','128'], a:1 },
+    { q:'ما نسبة مئة إلى ألف؟', opts:['1%','5%','10%','15%'], a:2 },
+    { q:'ما قيمة 1000 ÷ 25؟', opts:['30','35','40','45'], a:2 },
+  ],
+  arabic: [
+    { q:'ما جمع كلمة "قلم"؟', opts:['قِلام','أقلام','قلوم','قُلُم'], a:1 },
+    { q:'ما نوع الجملة "الطالبُ مجتهدٌ"؟', opts:['فعلية','اسمية','شرطية','وصفية'], a:1 },
+    { q:'ما مؤنث "أسد"؟', opts:['أسدة','لبؤة','أسدات','لبوة'], a:1 },
+    { q:'ما علامة رفع المبتدأ؟', opts:['الفتحة','الكسرة','الضمة','السكون'], a:2 },
+    { q:'ما ضد كلمة "سعيد"؟', opts:['حزين','غاضب','خائف','متعب'], a:0 },
+    { q:'أي الكلمات التالية جمع تكسير؟', opts:['كتابات','مدارس','مدرسون','معلمات'], a:1 },
+    { q:'ما الفاعل في جملة "فاز الطالبُ"؟', opts:['فاز','الطالبُ','فاز الطالب','لا يوجد'], a:1 },
+    { q:'ما نوع "لا" في "لا تكذب"؟', opts:['نافية','ناهية','زائدة','مشبهة'], a:1 },
+    { q:'"قرأتُ الكتابَ" — ما إعراب "الكتابَ"؟', opts:['فاعل','مفعول به','مبتدأ','خبر'], a:1 },
+    { q:'ما مفرد "أيدٍ"؟', opts:['أيد','يد','يدي','يَدان'], a:1 },
+  ],
+  science: [
+    { q:'ما الصيغة الكيميائية للماء؟', opts:['H₂O','CO₂','O₂','H₂'], a:0 },
+    { q:'كم عدد الكروموسومات في الخلية البشرية؟', opts:['23','46','48','44'], a:1 },
+    { q:'ما وحدة قياس الشدة الكهربائية؟', opts:['فولت','أوم','أمبير','واط'], a:2 },
+    { q:'ما أسرع كوكب في دورانه حول الشمس؟', opts:['الأرض','المريخ','عطارد','الزهرة'], a:2 },
+    { q:'ما العنصر الذي رمزه O؟', opts:['ذهب','أوزون','أكسجين','أزوت'], a:2 },
+    { q:'ما العضو المسؤول عن ضخ الدم في الجسم؟', opts:['الكبد','الرئة','القلب','الكلية'], a:2 },
+    { q:'ما الطاقة الناتجة عن الشمس؟', opts:['حرارية فقط','ضوئية فقط','حرارية وضوئية','ميكانيكية'], a:2 },
+    { q:'ما أصغر وحدة في المادة؟', opts:['جزيء','ذرة','خلية','إلكترون'], a:1 },
+    { q:'ما ناتج فتوسنتيز النباتات؟', opts:['CO₂','N₂','O₂','H₂O'], a:2 },
+    { q:'كم تبلغ سرعة الضوء تقريباً؟', opts:['200,000 كم/ث','300,000 كم/ث','400,000 كم/ث','100,000 كم/ث'], a:1 },
+  ],
+  english: [
+    { q:'What is the plural of "child"?', opts:['childs','childrens','children','child'], a:2 },
+    { q:'Choose the correct verb: She ___ to school.', opts:['go','goes','going','gone'], a:1 },
+    { q:'What is the opposite of "ancient"?', opts:['old','modern','big','small'], a:1 },
+    { q:'Which is a vowel?', opts:['B','C','E','G'], a:2 },
+    { q:'He ___ his homework yesterday.', opts:['do','does','did','done'], a:2 },
+    { q:'What does "enormous" mean?', opts:['tiny','beautiful','very large','very fast'], a:2 },
+    { q:'The sun ___ in the east.', opts:['rise','rose','raises','rises'], a:3 },
+    { q:'Which sentence is correct?', opts:['I is happy','I am happy','I are happy','I be happy'], a:1 },
+    { q:'What is the past tense of "run"?', opts:['runned','ran','run','running'], a:1 },
+    { q:'___ you speak Arabic?', opts:['Do','Does','Is','Are'], a:0 },
+  ],
+  general: [
+    { q:'كم عدد أيام السنة الكبيسة؟', opts:['364','365','366','367'], a:2 },
+    { q:'ما عاصمة المملكة العربية السعودية؟', opts:['جدة','مكة','الرياض','الدمام'], a:2 },
+    { q:'من كتب رواية "موبي ديك"؟', opts:['همنغواي','ملفيل','تولستوي','ديكنز'], a:1 },
+    { q:'ما أكبر قارة في العالم؟', opts:['إفريقيا','أمريكا','آسيا','أوروبا'], a:2 },
+    { q:'في أي عام تأسست الأمم المتحدة؟', opts:['1939','1945','1950','1955'], a:1 },
+    { q:'ما عملة اليابان؟', opts:['يوان','دولار','ين','روبية'], a:2 },
+    { q:'كم ضلعاً للمسدس؟', opts:['5','6','7','8'], a:1 },
+    { q:'ما أعمق بحيرة في العالم؟', opts:['بحيرة فيكتوريا','بحيرة بايكال','بحيرة تيتيكاكا','بحيرة ميشيغان'], a:1 },
+    { q:'ما سرعة الضوء بالكيلومتر في الثانية تقريباً؟', opts:['200,000','300,000','400,000','500,000'], a:1 },
+    { q:'ما أطول نهر في العالم؟', opts:['نهر الأمازون','نهر المسيسيبي','نهر النيل','نهر اليانغتسي'], a:2 },
+  ],
+};
+
+// ── State ─────────────────────────────────────────────────────
+let questions = [], currentQ = 0, score = 0, correct = 0, wrong = 0;
+let answered = false, subjectName = '', timerSec = 0, timerInt = null;
+
+function getSubjectId() {
+  return new URLSearchParams(location.search).get('subject') || 'general';
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+async function init() {
+  const subj = getSubjectId();
+  const bank  = QUESTIONS[subj] || QUESTIONS.general;
+  questions   = shuffle([...bank]).slice(0, Math.min(10, bank.length));
+
+  const titleMap = { math:'الرياضيات', arabic:'العربية', science:'العلوم', english:'الإنجليزية', general:'عام' };
+  subjectName = titleMap[subj] || subj;
+  document.getElementById('quiz-title').textContent = 'اختبار ' + subjectName;
+
+  startTimer();
+  renderQuestion();
+}
+
+function startTimer() {
+  timerSec = 0;
+  timerInt = setInterval(() => {
+    timerSec++;
+    const m = Math.floor(timerSec / 60), s = timerSec % 60;
+    document.getElementById('quiz-timer').textContent = pad2(m) + ':' + pad2(s);
+  }, 1000);
+}
+
+function renderQuestion() {
+  if (currentQ >= questions.length) { endQuiz(); return; }
+  const q = questions[currentQ];
+  answered = false;
+  const total = questions.length;
+  document.getElementById('q-counter').textContent = `سؤال ${currentQ + 1} / ${total}`;
+  document.getElementById('q-progress').style.width = ((currentQ / total) * 100) + '%';
+  document.getElementById('q-points').textContent = score + ' نقطة';
+  document.getElementById('q-text').textContent = q.q;
+  document.getElementById('feedback').style.display = 'none';
+  document.getElementById('feedback').className = 'feedback-wrap';
+
+  const letters = ['أ', 'ب', 'ج', 'د'];
+  document.getElementById('options').innerHTML = q.opts.map((opt, i) => `
+    <div class="option" onclick="answer(${i})">
+      <div class="option-letter">${letters[i]}</div>
+      <span>${opt}</span>
+    </div>`).join('');
+}
+
+async function answer(idx) {
+  if (answered) return;
+  answered = true;
+  const q = questions[currentQ];
+  const opts = document.querySelectorAll('.option');
+  opts.forEach(o => o.classList.add('disabled'));
+
+  const fb = document.getElementById('feedback');
+  if (idx === q.a) {
+    correct++;
+    score += 10;
+    opts[idx].classList.add('correct');
+    fb.className = 'feedback-wrap correct';
+    document.getElementById('fb-icon').textContent = '🎉';
+    document.getElementById('fb-text').textContent = 'إجابة صحيحة! +10 نقاط';
+    await Haptics.success();
+  } else {
+    wrong++;
+    opts[idx].classList.add('wrong');
+    opts[q.a].classList.add('correct');
+    fb.className = 'feedback-wrap wrong';
+    document.getElementById('fb-icon').textContent = '❌';
+    document.getElementById('fb-text').textContent = `الإجابة الصحيحة: ${q.opts[q.a]}`;
+    await Haptics.error();
+  }
+  document.getElementById('q-points').textContent = score + ' نقطة';
+  fb.style.display = 'block';
+}
+
+function nextQuestion() {
+  currentQ++;
+  renderQuestion();
+}
+
+async function endQuiz() {
+  clearInterval(timerInt);
+  document.getElementById('quiz-screen').style.display = 'none';
+  const rs = document.getElementById('result-screen');
+  rs.style.display = 'flex';
+
+  const pct = Math.round((correct / questions.length) * 100);
+  document.getElementById('r-pct').textContent = pct + '%';
+  document.getElementById('r-correct').textContent = correct;
+  document.getElementById('r-wrong').textContent = wrong;
+  document.getElementById('r-points').textContent = score;
+
+  const msgs = pct >= 90 ? ['ممتاز! 🏆', 'أداء رائع جداً']
+             : pct >= 70 ? ['جيد جداً! 👏', 'استمر في التحسن']
+             : pct >= 50 ? ['جيد 👍', 'يمكنك تحسين نتيجتك']
+             : ['تحتاج مزيداً من المراجعة 📚', 'راجع المادة وأعد المحاولة'];
+  document.getElementById('r-msg').textContent = msgs[0];
+  document.getElementById('r-sub').textContent = msgs[1];
+
+  // Save progress
+  await addPoints(score);
+  const qc = await Prefs.get('quiz_count', 0);
+  await Prefs.set('quiz_count', qc + 1);
+  localStorage.setItem('aqb_progress_' + getSubjectId(), (correct / questions.length).toFixed(2));
+
+  if (pct >= 70) await Haptics.success();
+  else await Haptics.warning();
+}
+
+async function shareResult() {
+  const pct = Math.round((correct / questions.length) * 100);
+  const m = Math.floor(timerSec / 60), s = timerSec % 60;
+  await Share.share(
+    'نتيجتي في AQB EDU',
+    `أجبت على ${correct} من ${questions.length} في اختبار ${subjectName}!\nالنتيجة: ${pct}% | النقاط: ${score} | الوقت: ${pad2(m)}:${pad2(s)}`,
+    'https://ah-0.github.io/Test-web/'
+  );
+}
+
+function retryQuiz() {
+  currentQ = 0; score = 0; correct = 0; wrong = 0; answered = false;
+  document.getElementById('result-screen').style.display = 'none';
+  document.getElementById('quiz-screen').style.display = '';
+  startTimer();
+  questions = shuffle([...questions]);
+  renderQuestion();
+}
+
+init();
+</script>
+</body>
+</html>

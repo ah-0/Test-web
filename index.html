@@ -1,605 +1,204 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <title>AQB Native</title>
+  <title>الرئيسية — AQB EDU</title>
+  <link rel="stylesheet" href="css/style.css" />
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --bg:       #0f0f2e;
-      --surface:  #1a1a4e;
-      --card:     #12123a;
-      --border:   #2a2a6a;
-      --gold:     #f5c518;
-      --gold2:    #d4a500;
-      --text:     #e8e8ff;
-      --muted:    #8888bb;
-      --green:    #22c55e;
-      --red:      #ef4444;
-      --blue:     #3b82f6;
-      --radius:   14px;
+    .greeting { font-size: 13px; color: var(--muted); }
+    .hero-banner {
+      background: linear-gradient(135deg, #1e3a5f 0%, #0d1b35 100%);
+      border: 1px solid var(--blue); border-radius: var(--radius);
+      padding: 20px; display: flex; align-items: center; gap: 16px;
     }
-
-    html, body {
-      height: 100%;
-      background: var(--bg);
-      color: var(--text);
-      font-family: -apple-system, 'Segoe UI', sans-serif;
-      font-size: 15px;
-      overscroll-behavior: none;
-      -webkit-tap-highlight-color: transparent;
+    .hero-text h2 { font-size: 18px; font-weight: 800; color: var(--blue-l); }
+    .hero-text p  { font-size: 13px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
+    .hero-emoji { font-size: 52px; flex-shrink: 0; }
+    .daily-tip {
+      background: var(--card); border: 1px solid var(--border); border-right: 4px solid var(--yellow);
+      border-radius: var(--radius); padding: 14px 16px;
     }
-
-    /* ── Top bar ── */
-    .topbar {
-      position: sticky; top: 0; z-index: 100;
-      background: var(--bg);
-      border-bottom: 1px solid var(--border);
-      padding: 14px 18px 12px;
-      display: flex; align-items: center; gap: 10px;
-    }
-    .topbar-dot {
-      width: 10px; height: 10px; border-radius: 50%;
-      background: var(--red); flex-shrink: 0;
-    }
-    .topbar-dot.online { background: var(--green); }
-    .topbar h1 { font-size: 17px; font-weight: 700; color: var(--gold); flex: 1; }
-    .topbar-badge {
-      font-size: 11px; padding: 3px 8px; border-radius: 20px;
-      background: var(--surface); color: var(--muted);
-    }
-    .topbar-badge.native { background: #1a3a1a; color: var(--green); }
-
-    /* ── Scroll area ── */
-    .scroll { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
-
-    /* ── Section ── */
-    .section-label {
-      font-size: 11px; font-weight: 700; letter-spacing: .08em;
-      color: var(--muted); text-transform: uppercase; padding: 0 2px;
-    }
-
-    /* ── Card ── */
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-    }
-    .card-header {
-      display: flex; align-items: center; gap: 10px;
-      padding: 14px 16px 12px;
-      border-bottom: 1px solid var(--border);
-    }
-    .card-icon {
-      width: 36px; height: 36px; border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 18px; flex-shrink: 0;
-    }
-    .card-title { font-size: 14px; font-weight: 700; }
-    .card-sub   { font-size: 12px; color: var(--muted); margin-top: 2px; }
-    .card-body  { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
-
-    /* ── Buttons ── */
-    .btn {
-      display: flex; align-items: center; justify-content: center; gap: 7px;
-      padding: 11px 16px; border-radius: 10px; border: none; cursor: pointer;
-      font-size: 14px; font-weight: 600; letter-spacing: .01em;
-      transition: opacity .15s, transform .1s;
-      -webkit-user-select: none; user-select: none;
-    }
-    .btn:active { opacity: .75; transform: scale(.97); }
-    .btn-gold   { background: var(--gold); color: #0a0a1e; }
-    .btn-ghost  { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
-    .btn-green  { background: #14532d; color: var(--green); border: 1px solid #166534; }
-    .btn-blue   { background: #1e3a5f; color: var(--blue); border: 1px solid #1d4ed8; }
-    .btn-red    { background: #450a0a; color: var(--red); border: 1px solid #7f1d1d; }
-    .btn-row    { display: flex; gap: 8px; }
-    .btn-row .btn { flex: 1; }
-
-    /* ── Output box ── */
-    .output {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 8px; padding: 10px 12px;
-      font-size: 12.5px; color: var(--muted); min-height: 44px;
-      word-break: break-all; line-height: 1.6;
-      white-space: pre-wrap;
-    }
-    .output.ok   { color: var(--green); border-color: #166534; }
-    .output.err  { color: var(--red);   border-color: #7f1d1d; }
-    .output.info { color: var(--gold);  border-color: var(--gold2); }
-
-    /* ── Input ── */
-    .input {
-      width: 100%; background: var(--surface); border: 1px solid var(--border);
-      border-radius: 8px; padding: 10px 12px; color: var(--text);
-      font-size: 14px; outline: none;
-    }
-    .input:focus { border-color: var(--gold); }
-
-    /* ── Device info grid ── */
-    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .info-item {
-      background: var(--surface); border-radius: 8px; border: 1px solid var(--border);
-      padding: 10px 12px;
-    }
-    .info-item .key   { font-size: 10px; color: var(--muted); margin-bottom: 3px; }
-    .info-item .val   { font-size: 13px; font-weight: 600; }
-
-    /* ── Image preview ── */
-    #img-preview {
-      width: 100%; border-radius: 10px; display: none;
-      max-height: 220px; object-fit: cover;
-    }
-
-    /* ── File list ── */
-    .file-item {
-      display: flex; align-items: center; gap: 10px;
-      background: var(--surface); border-radius: 8px;
-      padding: 10px 12px; border: 1px solid var(--border);
-    }
-    .file-item .fi-icon { font-size: 22px; flex-shrink: 0; }
-    .file-item .fi-name { font-size: 13px; font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .file-item .fi-size { font-size: 11px; color: var(--muted); }
-
-    /* ── Notification badge ── */
-    #notif-count {
-      display: inline-block; background: var(--red); color: #fff;
-      font-size: 10px; font-weight: 700; border-radius: 20px;
-      padding: 1px 6px; margin-right: 4px; min-width: 18px; text-align: center;
-    }
-
-    /* ── Toast ── */
-    #toast {
-      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
-      background: #1c1c3e; border: 1px solid var(--border); color: var(--text);
-      padding: 10px 20px; border-radius: 100px; font-size: 13px;
-      transition: transform .3s; z-index: 999; white-space: nowrap;
-      box-shadow: 0 4px 20px rgba(0,0,0,.5);
-    }
-    #toast.show { transform: translateX(-50%) translateY(0); }
+    .daily-tip .tip-head { font-size: 11px; color: var(--yellow); font-weight: 700; margin-bottom: 6px; }
+    .daily-tip p { font-size: 13px; color: var(--muted); line-height: 1.6; }
   </style>
 </head>
-<body>
-
-<!-- ── Top bar ── -->
+<body class="page">
 <div class="topbar">
-  <div class="topbar-dot" id="net-dot"></div>
-  <h1>🎓 AQB Native</h1>
-  <div class="topbar-badge" id="env-badge">Web</div>
+  <div class="net-dot" id="net-dot"></div>
+  <div>
+    <h1 id="greeting-name">AQB EDU</h1>
+    <div class="greeting" id="greeting-date"></div>
+  </div>
+  <div class="topbar-right">
+    <a href="notifications.html" style="font-size:22px;text-decoration:none;">🔔</a>
+    <a href="settings.html" style="font-size:22px;text-decoration:none;">⚙️</a>
+  </div>
 </div>
 
-<!-- ── Content ── -->
 <div class="scroll">
 
-  <!-- ── Share ── -->
-  <div class="section-label">مشاركة</div>
-  <div class="card">
-    <div class="card-header">
-      <div class="card-icon" style="background:#1a2a3a">📤</div>
-      <div><div class="card-title">Native Share</div><div class="card-sub">مشاركة نص أو رابط عبر التطبيقات</div></div>
-    </div>
-    <div class="card-body">
-      <input class="input" id="share-title" placeholder="العنوان" value="بنك الأسئلة الأكاديمي" />
-      <input class="input" id="share-text"  placeholder="النص" value="تطبيق رائع لمراجعة الأسئلة!" />
-      <input class="input" id="share-url"   placeholder="الرابط" value="https://ah-0.github.io/Test-web/" />
-      <button class="btn btn-gold" onclick="doShare()">📤 مشاركة الآن</button>
-      <div class="output" id="share-out">جاهز للمشاركة…</div>
+  <!-- Hero -->
+  <div class="hero-banner">
+    <div class="hero-emoji">📖</div>
+    <div class="hero-text">
+      <h2>حان وقت الدراسة!</h2>
+      <p>واصل رحلتك التعليمية واكسب نقاطاً جديدة اليوم</p>
     </div>
   </div>
 
-  <!-- ── Notifications ── -->
-  <div class="section-label">الإشعارات المحلية</div>
-  <div class="card">
-    <div class="card-header">
-      <div class="card-icon" style="background:#1a1a2e">🔔</div>
-      <div><div class="card-title">Local Notifications</div><div class="card-sub">إرسال إشعار محلي فوري أو مجدول</div></div>
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-val" id="stat-points">0</div>
+      <div class="stat-label">النقاط 🏆</div>
     </div>
-    <div class="card-body">
-      <input class="input" id="notif-title" placeholder="عنوان الإشعار" value="تذكير دراسي 📚" />
-      <input class="input" id="notif-body"  placeholder="نص الإشعار"   value="حان وقت مراجعة الأسئلة!" />
-      <div class="btn-row">
-        <button class="btn btn-gold"  onclick="sendNotif(0)">🔔 فوري</button>
-        <button class="btn btn-ghost" onclick="sendNotif(5)">⏰ بعد 5 ثوانٍ</button>
-      </div>
-      <button class="btn btn-ghost" onclick="checkNotifPerm()">🔑 التحقق من الإذن</button>
-      <div class="output" id="notif-out">انقر لطلب الإذن أولاً…</div>
+    <div class="stat-card">
+      <div class="stat-val" id="stat-streak">0</div>
+      <div class="stat-label">أيام متتالية 🔥</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" id="stat-quizzes">0</div>
+      <div class="stat-label">اختبارات ✅</div>
     </div>
   </div>
 
-  <!-- ── Camera / Gallery ── -->
-  <div class="section-label">الكاميرا والمعرض</div>
-  <div class="card">
-    <div class="card-header">
-      <div class="card-icon" style="background:#1a0a2e">📷</div>
-      <div><div class="card-title">Camera & Gallery</div><div class="card-sub">التقاط أو اختيار صورة</div></div>
-    </div>
-    <div class="card-body">
-      <div class="btn-row">
-        <button class="btn btn-gold"  onclick="openCamera()">📷 كاميرا</button>
-        <button class="btn btn-ghost" onclick="openGallery()">🖼️ معرض</button>
-      </div>
-      <img id="img-preview" alt="معاينة الصورة" />
-      <div class="output" id="cam-out">لم يتم التقاط صورة بعد…</div>
+  <!-- Quick actions -->
+  <div class="section-label">ابدأ الآن</div>
+  <div class="grid-2">
+    <a href="quiz.html" class="action-card">
+      <span class="ac-icon">📝</span>
+      <span style="font-size:14px;font-weight:700;">اختبار سريع</span>
+      <span class="ac-label">اختبر معلوماتك</span>
+    </a>
+    <a href="flashcards.html" class="action-card">
+      <span class="ac-icon">🃏</span>
+      <span style="font-size:14px;font-weight:700;">البطاقات</span>
+      <span class="ac-label">مراجعة سريعة</span>
+    </a>
+    <a href="schedule.html" class="action-card">
+      <span class="ac-icon">📅</span>
+      <span style="font-size:14px;font-weight:700;">جدولي</span>
+      <span class="ac-label">مؤقت + إشعارات</span>
+    </a>
+    <a href="leaderboard.html" class="action-card">
+      <span class="ac-icon">🏆</span>
+      <span style="font-size:14px;font-weight:700;">المتصدرون</span>
+      <span class="ac-label">قارن نفسك</span>
+    </a>
+  </div>
+
+  <!-- Today's schedule preview -->
+  <div class="section-label">جدول اليوم</div>
+  <div id="today-schedule">
+    <div class="empty">
+      <span class="empty-icon">📅</span>
+      لا توجد جلسات مجدولة اليوم<br>
+      <a href="schedule.html" style="color:var(--blue-l);font-size:13px;margin-top:8px;display:inline-block;">+ أضف جلسة</a>
     </div>
   </div>
 
-  <!-- ── Clipboard ── -->
-  <div class="section-label">الحافظة</div>
-  <div class="card">
-    <div class="card-header">
-      <div class="card-icon" style="background:#0a2a1a">📋</div>
-      <div><div class="card-title">Clipboard</div><div class="card-sub">نسخ ولصق النصوص</div></div>
-    </div>
-    <div class="card-body">
-      <input class="input" id="clip-text" placeholder="النص المراد نسخه" value="مرحباً من AQB App!" />
-      <div class="btn-row">
-        <button class="btn btn-green" onclick="doCopy()">📋 نسخ</button>
-        <button class="btn btn-ghost" onclick="doPaste()">📄 لصق</button>
-      </div>
-      <div class="output" id="clip-out">—</div>
-    </div>
+  <!-- Courses -->
+  <div class="section-label">المواد</div>
+  <div id="courses-preview"></div>
+  <a href="courses.html" class="btn btn-ghost" style="text-align:center;">عرض جميع المواد 📚</a>
+
+  <!-- Daily tip -->
+  <div class="daily-tip">
+    <div class="tip-head">💡 نصيحة اليوم</div>
+    <p id="daily-tip-text">جرّب تقنية بومودورو: 25 دقيقة دراسة ثم 5 دقائق استراحة — تزيد التركيز وتقلل الإجهاد.</p>
   </div>
 
-  <!-- ── Haptics ── -->
-  <div class="section-label">الاهتزاز</div>
-  <div class="card">
-    <div class="card-header">
-      <div class="card-icon" style="background:#2a1a0a">📳</div>
-      <div><div class="card-title">Haptics / Vibration</div><div class="card-sub">اهتزاز تغذية راجعة</div></div>
-    </div>
-    <div class="card-body">
-      <div class="btn-row">
-        <button class="btn btn-gold"  onclick="haptic('LIGHT')">خفيف</button>
-        <button class="btn btn-ghost" onclick="haptic('MEDIUM')">متوسط</button>
-        <button class="btn btn-red"   onclick="haptic('HEAVY')">قوي</button>
-      </div>
-      <div class="btn-row">
-        <button class="btn btn-ghost" onclick="haptic('SUCCESS')">✅ نجاح</button>
-        <button class="btn btn-ghost" onclick="haptic('WARNING')">⚠️ تحذير</button>
-        <button class="btn btn-ghost" onclick="haptic('ERROR')">❌ خطأ</button>
-      </div>
-      <div class="output" id="haptic-out">اضغط أي زر للاختبار…</div>
-    </div>
-  </div>
+</div>
 
-  <!-- ── Device Info ── -->
-  <div class="section-label">معلومات الجهاز</div>
-  <div class="card">
-    <div class="card-header">
-      <div class="card-icon" style="background:#1a1a0a">📱</div>
-      <div><div class="card-title">Device Info</div><div class="card-sub">بيانات الجهاز والنظام</div></div>
-    </div>
-    <div class="card-body">
-      <button class="btn btn-gold" onclick="loadDeviceInfo()">🔍 تحميل المعلومات</button>
-      <div class="info-grid" id="device-grid">
-        <div class="info-item"><div class="key">النظام</div><div class="val" id="d-os">—</div></div>
-        <div class="info-item"><div class="key">الإصدار</div><div class="val" id="d-ver">—</div></div>
-        <div class="info-item"><div class="key">الجهاز</div><div class="val" id="d-model">—</div></div>
-        <div class="info-item"><div class="key">المصنّع</div><div class="val" id="d-mfr">—</div></div>
-        <div class="info-item"><div class="key">UUID</div><div class="val" id="d-uuid" style="font-size:10px">—</div></div>
-        <div class="info-item"><div class="key">البيئة</div><div class="val" id="d-plat">—</div></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── Network ── -->
-  <div class="section-label">حالة الشبكة</div>
-  <div class="card">
-    <div class="card-header">
-      <div class="card-icon" style="background:#0a1a2a">📶</div>
-      <div><div class="card-title">Network Status</div><div class="card-sub">نوع الاتصال والحالة</div></div>
-    </div>
-    <div class="card-body">
-      <button class="btn btn-gold" onclick="checkNetwork()">🔄 فحص الشبكة</button>
-      <div class="output info" id="net-out">انقر لفحص الاتصال…</div>
-    </div>
-  </div>
-
-  <!-- ── Filesystem ── -->
-  <div class="section-label">نظام الملفات</div>
-  <div class="card">
-    <div class="card-header">
-      <div class="card-icon" style="background:#1a2a1a">📁</div>
-      <div><div class="card-title">Filesystem</div><div class="card-sub">كتابة وقراءة الملفات من التخزين</div></div>
-    </div>
-    <div class="card-body">
-      <input class="input" id="file-content" placeholder="محتوى الملف المراد حفظه" value="مذكرات مراجعة AQB — يوم رائع!" />
-      <div class="btn-row">
-        <button class="btn btn-green" onclick="writeFile()">💾 حفظ</button>
-        <button class="btn btn-ghost" onclick="readFile()">📂 قراءة</button>
-      </div>
-      <div class="output" id="fs-out">—</div>
-    </div>
-  </div>
-
-  <div style="height: 24px"></div>
-</div><!-- /scroll -->
-
-<!-- Toast -->
-<div id="toast"></div>
-
-<!-- ═══════════════════════════════════════════════════════════════════ -->
+<nav id="bottom-nav"></nav>
+<script src="js/app.js"></script>
 <script>
-/* ─── Capacitor bridge detection ─────────────────────────────────────── */
-const isNative = () =>
-  typeof window !== 'undefined' &&
-  typeof window.Capacitor !== 'undefined' &&
-  window.Capacitor.isNativePlatform?.();
+const TIPS = [
+  'جرّب تقنية بومودورو: 25 دقيقة دراسة ثم 5 دقائق استراحة — تزيد التركيز وتقلل الإجهاد.',
+  'راجع المادة قبل النوم مباشرةً — الدماغ يعالج المعلومات أثناء النوم ويثبّتها.',
+  'الكتابة باليد أثناء الدراسة يُحسّن الحفظ بنسبة تصل إلى 40%.',
+  'قسّم المادة الكبيرة إلى وحدات صغيرة وراجع كل وحدة على حدة.',
+  'الشرح لشخص آخر أفضل طريقة للتحقق من فهمك للمادة.',
+  'ابتعد عن الهاتف 30 دقيقة قبل وأثناء المذاكرة لزيادة التركيز.',
+  'اشرب الماء بانتظام أثناء الدراسة — الجفاف يضعف التركيز.',
+];
 
-const P = (name) => {
-  if (isNative() && window.Capacitor.Plugins?.[name]) {
-    return window.Capacitor.Plugins[name];
-  }
-  return null;
-};
+const COURSES_DEFAULT = [
+  { id: 'math',   icon: '🔢', name: 'الرياضيات', color: '#1e3a5f' },
+  { id: 'arabic', icon: '📖', name: 'اللغة العربية', color: '#3b0764' },
+  { id: 'science',icon: '🔬', name: 'العلوم',    color: '#14532d' },
+  { id: 'english',icon: '🌍', name: 'اللغة الإنجليزية', color: '#451a03' },
+];
 
-/* ─── Init ───────────────────────────────────────────────────────────── */
-document.addEventListener('DOMContentLoaded', async () => {
-  const badge = document.getElementById('env-badge');
-  if (isNative()) {
-    badge.textContent = '📱 Native';
-    badge.classList.add('native');
-  } else {
-    badge.textContent = '🌐 Web';
-  }
-  updateNetDot(navigator.onLine);
-  window.addEventListener('online',  () => updateNetDot(true));
-  window.addEventListener('offline', () => updateNetDot(false));
-});
+async function init() {
+  const done = await Prefs.get('onboarded', false);
+  if (!done) { location.href = 'onboarding.html'; return; }
 
-function updateNetDot(online) {
+  renderBottomNav('home');
+
+  // Network
+  const online = await isOnline();
   const dot = document.getElementById('net-dot');
   dot.classList.toggle('online', online);
+
+  // Greeting
+  const name = await Prefs.get('name', 'طالب');
+  document.getElementById('greeting-name').textContent = 'مرحباً ' + name + ' 👋';
+  document.getElementById('greeting-date').textContent = formatDateAr(new Date());
+
+  // Stats
+  const pts    = await Prefs.get('points', 0);
+  const streak = await touchStreak();
+  const quizzes= await Prefs.get('quiz_count', 0);
+  document.getElementById('stat-points').textContent  = pts;
+  document.getElementById('stat-streak').textContent  = streak;
+  document.getElementById('stat-quizzes').textContent = quizzes;
+
+  // Daily tip
+  const tipIdx = new Date().getDate() % TIPS.length;
+  document.getElementById('daily-tip-text').textContent = TIPS[tipIdx];
+
+  // Today's schedule
+  const sessions = await Prefs.get('schedule', []);
+  const todayStr = new Date().toDateString();
+  const todaySessions = sessions.filter(s => {
+    const d = new Date(s.datetime);
+    return d.toDateString() === todayStr && d > new Date();
+  }).slice(0, 3);
+
+  if (todaySessions.length > 0) {
+    document.getElementById('today-schedule').innerHTML = todaySessions.map(s => {
+      const d = new Date(s.datetime);
+      return `<div class="schedule-item" style="margin-bottom:8px;">
+        <div class="si-time">${formatTime12(d)}</div>
+        <div class="si-body">
+          <div class="si-title">${s.subject}</div>
+          <div class="si-sub">${s.duration} دقيقة</div>
+        </div>
+        <span class="badge badge-blue">قادمة</span>
+      </div>`;
+    }).join('');
+  }
+
+  // Courses preview
+  const courses = await Prefs.get('courses', COURSES_DEFAULT);
+  document.getElementById('courses-preview').innerHTML = courses.slice(0,3).map(c => {
+    const prog = Math.floor(Math.random() * 60 + 20);
+    return `<a href="quiz.html?subject=${c.id}" class="list-item" style="margin-bottom:8px;">
+      <span class="li-icon">${c.icon}</span>
+      <div class="li-body">
+        <div class="li-title">${c.name}</div>
+        <div style="margin-top:6px;" class="progress-wrap"><div class="progress-bar" style="width:${prog}%"></div></div>
+      </div>
+      <span class="li-right">›</span>
+    </a>`;
+  }).join('');
 }
 
-/* ─── Toast ──────────────────────────────────────────────────────────── */
-let toastTimer;
-function toast(msg) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
-}
-
-function setOut(id, msg, type = '') {
-  const el = document.getElementById(id);
-  el.textContent = msg;
-  el.className = 'output' + (type ? ' ' + type : '');
-}
-
-/* ─── Share ──────────────────────────────────────────────────────────── */
-async function doShare() {
-  const title = document.getElementById('share-title').value;
-  const text  = document.getElementById('share-text').value;
-  const url   = document.getElementById('share-url').value;
-
-  const plugin = P('Share');
-  if (plugin) {
-    try {
-      await plugin.share({ title, text, url, dialogTitle: 'مشاركة عبر' });
-      setOut('share-out', '✅ تمت المشاركة بنجاح', 'ok');
-    } catch (e) {
-      setOut('share-out', e.message.includes('cancel') ? 'تم الإلغاء' : '❌ ' + e.message, 'err');
-    }
-  } else if (navigator.share) {
-    try {
-      await navigator.share({ title, text, url });
-      setOut('share-out', '✅ تمت المشاركة (Web Share API)', 'ok');
-    } catch (e) {
-      setOut('share-out', 'تم الإلغاء أو غير مدعوم', 'err');
-    }
-  } else {
-    navigator.clipboard?.writeText(url);
-    setOut('share-out', '⚠️ تم نسخ الرابط (Share غير مدعوم في المتصفح)', '');
-    toast('تم نسخ الرابط 📋');
-  }
-}
-
-/* ─── Local Notifications ────────────────────────────────────────────── */
-async function checkNotifPerm() {
-  const plugin = P('LocalNotifications');
-  if (!plugin) {
-    setOut('notif-out', '⚠️ يعمل فقط داخل التطبيق', '');
-    return;
-  }
-  try {
-    const res = await plugin.requestPermissions();
-    const ok  = res.display === 'granted';
-    setOut('notif-out', ok ? '✅ الإذن ممنوح' : '❌ الإذن مرفوض: ' + res.display, ok ? 'ok' : 'err');
-  } catch (e) {
-    setOut('notif-out', '❌ ' + e.message, 'err');
-  }
-}
-
-let notifId = 1;
-async function sendNotif(delaySec) {
-  const plugin = P('LocalNotifications');
-  if (!plugin) {
-    setOut('notif-out', '⚠️ يعمل فقط داخل التطبيق', '');
-    return;
-  }
-  const title = document.getElementById('notif-title').value || 'إشعار';
-  const body  = document.getElementById('notif-body').value  || '...';
-  const id    = notifId++;
-
-  try {
-    let opts = { notifications: [{ id, title, body, sound: 'default', smallIcon: 'ic_stat_icon_config_sample' }] };
-    if (delaySec > 0) {
-      const at = new Date(Date.now() + delaySec * 1000);
-      opts.notifications[0].schedule = { at };
-    }
-    await plugin.schedule(opts);
-    const msg = delaySec === 0 ? '✅ تم إرسال الإشعار فوراً' : `✅ الإشعار مجدول بعد ${delaySec} ثوانٍ`;
-    setOut('notif-out', msg, 'ok');
-    toast('🔔 ' + msg);
-  } catch (e) {
-    setOut('notif-out', '❌ ' + e.message + ' (تأكد من منح الإذن أولاً)', 'err');
-  }
-}
-
-/* ─── Camera ─────────────────────────────────────────────────────────── */
-async function openCamera()  { await captureImage('CAMERA'); }
-async function openGallery() { await captureImage('PHOTOS'); }
-
-async function captureImage(source) {
-  const plugin = P('Camera');
-  const preview = document.getElementById('img-preview');
-  if (!plugin) {
-    setOut('cam-out', '⚠️ يعمل فقط داخل التطبيق', '');
-    return;
-  }
-  try {
-    const img = await plugin.getPhoto({
-      quality: 85,
-      allowEditing: false,
-      resultType: 'base64',
-      source,
-      correctOrientation: true
-    });
-    const src = 'data:image/jpeg;base64,' + img.base64String;
-    preview.src = src;
-    preview.style.display = 'block';
-    setOut('cam-out', `✅ ${source === 'CAMERA' ? 'تم التقاط' : 'تم اختيار'} الصورة — ${img.format.toUpperCase()}`, 'ok');
-  } catch (e) {
-    if (!e.message.includes('cancel')) setOut('cam-out', '❌ ' + e.message, 'err');
-    else setOut('cam-out', 'تم الإلغاء', '');
-  }
-}
-
-/* ─── Clipboard ──────────────────────────────────────────────────────── */
-async function doCopy() {
-  const text   = document.getElementById('clip-text').value;
-  const plugin = P('Clipboard');
-  if (plugin) {
-    try {
-      await plugin.write({ string: text });
-      setOut('clip-out', '✅ تم النسخ: ' + text, 'ok');
-      toast('تم النسخ 📋');
-    } catch (e) { setOut('clip-out', '❌ ' + e.message, 'err'); }
-  } else {
-    try {
-      await navigator.clipboard.writeText(text);
-      setOut('clip-out', '✅ تم النسخ (Web): ' + text, 'ok');
-    } catch { setOut('clip-out', '❌ فشل النسخ', 'err'); }
-  }
-}
-
-async function doPaste() {
-  const plugin = P('Clipboard');
-  if (plugin) {
-    try {
-      const res = await plugin.read();
-      setOut('clip-out', '📄 المحتوى: ' + (res.value || '(فارغ)'), 'info');
-    } catch (e) { setOut('clip-out', '❌ ' + e.message, 'err'); }
-  } else {
-    try {
-      const text = await navigator.clipboard.readText();
-      setOut('clip-out', '📄 المحتوى: ' + (text || '(فارغ)'), 'info');
-    } catch { setOut('clip-out', '⚠️ اللصق يحتاج إذن المتصفح', ''); }
-  }
-}
-
-/* ─── Haptics ────────────────────────────────────────────────────────── */
-async function haptic(type) {
-  const plugin = P('Haptics');
-  const types  = ['SUCCESS','WARNING','ERROR'];
-  if (plugin) {
-    try {
-      if (types.includes(type)) {
-        await plugin.notification({ type });
-      } else {
-        await plugin.impact({ style: type });
-      }
-      setOut('haptic-out', '📳 اهتزاز: ' + type, 'ok');
-    } catch (e) { setOut('haptic-out', '❌ ' + e.message, 'err'); }
-  } else {
-    navigator.vibrate?.([50, 30, 80]);
-    setOut('haptic-out', '📳 اهتزاز (Web Vibration API): ' + type, '');
-  }
-}
-
-/* ─── Device Info ────────────────────────────────────────────────────── */
-async function loadDeviceInfo() {
-  const plugin = P('Device');
-  const set = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val || '—'; };
-
-  if (plugin) {
-    try {
-      const [info, id] = await Promise.all([plugin.getInfo(), plugin.getId()]);
-      set('d-os',    info.operatingSystem + ' ' + info.osVersion);
-      set('d-ver',   info.androidSDKVersion || info.iOSVersion || '—');
-      set('d-model', info.model);
-      set('d-mfr',   info.manufacturer);
-      set('d-uuid',  id.identifier?.slice(0, 16) + '…');
-      set('d-plat',  info.platform + (info.isVirtual ? ' (Emulator)' : ' (Real)'));
-    } catch (e) { toast('❌ ' + e.message); }
-  } else {
-    set('d-os',    navigator.userAgentData?.platform || navigator.platform);
-    set('d-ver',   navigator.appVersion?.slice(0, 20));
-    set('d-model', 'Web Browser');
-    set('d-mfr',   navigator.vendor || '—');
-    set('d-uuid',  '—');
-    set('d-plat',  'web');
-  }
-}
-
-/* ─── Network ────────────────────────────────────────────────────────── */
-async function checkNetwork() {
-  const plugin = P('Network');
-  if (plugin) {
-    try {
-      const s = await plugin.getStatus();
-      const icon = s.connected ? '✅' : '❌';
-      const typeMap = { wifi: 'Wi-Fi 📶', cellular: 'بيانات جوال 📡', none: 'لا يوجد اتصال ❌', unknown: 'غير معروف' };
-      setOut('net-out', `${icon} متصل: ${s.connected ? 'نعم' : 'لا'}\nالنوع: ${typeMap[s.connectionType] || s.connectionType}`, s.connected ? 'ok' : 'err');
-      updateNetDot(s.connected);
-    } catch (e) { setOut('net-out', '❌ ' + e.message, 'err'); }
-  } else {
-    const online = navigator.onLine;
-    setOut('net-out', online ? '✅ متصل بالإنترنت (Web)' : '❌ لا يوجد اتصال (Web)', online ? 'ok' : 'err');
-    updateNetDot(online);
-  }
-}
-
-/* ─── Filesystem ─────────────────────────────────────────────────────── */
-const FS_NAME = 'aqb-notes.txt';
-
-async function writeFile() {
-  const plugin = P('Filesystem');
-  const data   = document.getElementById('file-content').value;
-  if (!plugin) {
-    localStorage.setItem(FS_NAME, data);
-    setOut('fs-out', '✅ تم الحفظ في localStorage (Web): ' + FS_NAME, 'ok');
-    return;
-  }
-  try {
-    await plugin.writeFile({ path: FS_NAME, data, directory: 'DOCUMENTS', encoding: 'utf8' });
-    setOut('fs-out', '✅ تم الحفظ في Documents/' + FS_NAME, 'ok');
-    toast('تم الحفظ 💾');
-  } catch (e) { setOut('fs-out', '❌ ' + e.message, 'err'); }
-}
-
-async function readFile() {
-  const plugin = P('Filesystem');
-  if (!plugin) {
-    const data = localStorage.getItem(FS_NAME);
-    setOut('fs-out', data ? '📂 المحتوى:\n' + data : '⚠️ الملف غير موجود', data ? 'info' : '');
-    return;
-  }
-  try {
-    const res = await plugin.readFile({ path: FS_NAME, directory: 'DOCUMENTS', encoding: 'utf8' });
-    setOut('fs-out', '📂 المحتوى:\n' + res.data, 'info');
-  } catch (e) {
-    setOut('fs-out', e.message.includes('exist') ? '⚠️ الملف غير موجود — احفظ أولاً' : '❌ ' + e.message, 'err');
-  }
-}
+init();
 </script>
 </body>
 </html>

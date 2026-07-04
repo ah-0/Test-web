@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>المواد — AQB EDU</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .course-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 16px; cursor: pointer;
+      transition: background .15s, transform .1s; text-decoration: none;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .course-card:active { transform: scale(.98); background: var(--surface); }
+    .course-top { display: flex; align-items: center; gap: 12px; }
+    .course-icon {
+      width: 48px; height: 48px; border-radius: 14px;
+      display: flex; align-items: center; justify-content: center; font-size: 24px;
+      background: var(--surface); flex-shrink: 0;
+    }
+    .course-name  { font-size: 15px; font-weight: 700; }
+    .course-sub   { font-size: 12px; color: var(--muted); margin-top: 3px; }
+    .course-stats { display: flex; gap: 8px; align-items: center; }
+    .course-pct   { font-size: 12px; color: var(--blue-l); font-weight: 700; margin-right: auto; }
+    .del-btn { color: var(--muted); font-size: 18px; padding: 4px; cursor: pointer; }
+  </style>
+</head>
+<body class="page">
+<div class="topbar">
+  <span class="topbar-icon">📚</span>
+  <h1>المواد الدراسية</h1>
+  <button class="btn btn-blue btn-sm" onclick="addCourse()">+ إضافة</button>
+</div>
+
+<div class="scroll">
+  <div class="section-label">مواد الدراسة</div>
+  <div id="courses-list"></div>
+
+  <div class="card">
+    <div class="card-body" style="gap:8px;">
+      <div style="font-size:13px;color:var(--muted);text-align:center;">
+        انقر على أي مادة لبدء اختبار أو مراجعة البطاقات التعليمية
+      </div>
+      <div class="btn-row">
+        <a href="quiz.html" class="btn btn-blue" style="flex:1;">📝 اختبار عشوائي</a>
+        <a href="flashcards.html" class="btn btn-ghost" style="flex:1;">🃏 البطاقات</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<nav id="bottom-nav"></nav>
+<script src="js/app.js"></script>
+<script>
+const DEFAULT_COURSES = [
+  { id:'math',    icon:'🔢', name:'الرياضيات',          desc:'جبر، هندسة، إحصاء',    color:'#1e3a5f' },
+  { id:'arabic',  icon:'📖', name:'اللغة العربية',       desc:'نحو، صرف، أدب',         color:'#3b0764' },
+  { id:'science', icon:'🔬', name:'العلوم',              desc:'فيزياء، كيمياء، أحياء', color:'#14532d' },
+  { id:'english', icon:'🌍', name:'اللغة الإنجليزية',   desc:'قواعد، مفردات، قراءة',  color:'#451a03' },
+  { id:'history', icon:'🏛️', name:'التاريخ',            desc:'الحضارات والأحداث',     color:'#4c0519' },
+  { id:'geo',     icon:'🗺️', name:'الجغرافيا',          desc:'مناخ، خرائط، موارد',    color:'#042f2e' },
+];
+
+let courses = [];
+
+async function loadCourses() {
+  courses = await Prefs.get('courses', DEFAULT_COURSES);
+  renderCourses();
+}
+
+async function saveCourses() {
+  await Prefs.set('courses', courses);
+}
+
+function renderCourses() {
+  const el = document.getElementById('courses-list');
+  if (!courses.length) {
+    el.innerHTML = `<div class="empty"><span class="empty-icon">📚</span>لا توجد مواد بعد<br><small>اضغط "+ إضافة" لإضافة مادة</small></div>`;
+    return;
+  }
+  el.innerHTML = courses.map((c, i) => {
+    const prog = getProgress(c.id);
+    const pct  = Math.round(prog * 100);
+    const barColor = pct >= 70 ? 'green' : pct >= 40 ? '' : 'red';
+    return `
+    <div class="course-card" style="margin-bottom:10px;">
+      <div class="course-top">
+        <div class="course-icon" style="background:${c.color}20;border:1px solid ${c.color}40;">${c.icon}</div>
+        <div style="flex:1;min-width:0;">
+          <div class="course-name">${c.name}</div>
+          <div class="course-sub">${c.desc || 'اضغط للدراسة'}</div>
+        </div>
+        <span class="del-btn" onclick="deleteCourse(${i},event)">✕</span>
+      </div>
+      <div>
+        <div class="course-stats">
+          <span style="font-size:12px;color:var(--muted);">التقدم</span>
+          <span class="course-pct">${pct}%</span>
+        </div>
+        <div class="progress-wrap" style="margin-top:4px;">
+          <div class="progress-bar ${barColor}" style="width:${pct}%"></div>
+        </div>
+      </div>
+      <div class="btn-row">
+        <a href="quiz.html?subject=${c.id}" class="btn btn-blue btn-sm" style="flex:1;">📝 اختبار</a>
+        <a href="flashcards.html?subject=${c.id}" class="btn btn-ghost btn-sm" style="flex:1;">🃏 بطاقات</a>
+        <a href="schedule.html?subject=${encodeURIComponent(c.name)}" class="btn btn-ghost btn-sm" style="flex:1;">📅 جدول</a>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function getProgress(id) {
+  const raw = localStorage.getItem('aqb_progress_' + id);
+  return raw ? parseFloat(raw) : Math.random() * 0.5;
+}
+
+async function addCourse() {
+  const name = await Dialog.prompt('إضافة مادة جديدة', 'اكتب اسم المادة', 'مثال: الفيزياء');
+  if (!name || !name.trim()) return;
+  const icons = ['📐','🧮','💡','🧪','🌿','📜','🎵','🎨','💻','🧠','🌐','⚗️'];
+  const icon  = icons[Math.floor(Math.random() * icons.length)];
+  const colors= ['#1e3a5f','#3b0764','#14532d','#451a03','#4c0519','#042f2e','#1a2d50'];
+  const color = colors[Math.floor(Math.random() * colors.length)];
+  const id    = 'custom_' + Date.now();
+  courses.push({ id, icon, name: name.trim(), desc: 'مادة مخصّصة', color });
+  await saveCourses();
+  await Haptics.success();
+  showToast('✅ تمت إضافة المادة');
+  renderCourses();
+}
+
+async function deleteCourse(i, e) {
+  e.preventDefault(); e.stopPropagation();
+  const ok = await Dialog.confirm('حذف المادة', `هل تريد حذف "${courses[i].name}"؟`);
+  if (!ok) return;
+  courses.splice(i, 1);
+  await saveCourses();
+  await Haptics.warning();
+  showToast('تم حذف المادة');
+  renderCourses();
+}
+
+renderBottomNav('courses');
+loadCourses();
+</script>
+</body>
+</html>

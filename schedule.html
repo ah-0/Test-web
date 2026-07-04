@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>الجدول الدراسي — AQB EDU</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .next-card {
+      background: linear-gradient(135deg, #1e3a5f 0%, #0d1b35 100%);
+      border: 1px solid var(--blue); border-radius: var(--radius);
+      padding: 20px; text-align: center;
+    }
+    .next-label { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+    .next-subject { font-size: 18px; font-weight: 800; color: var(--blue-l); margin-bottom: 12px; }
+    .add-form { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .day-tabs { display:flex; gap:6px; overflow-x:auto; padding-bottom:2px; }
+    .day-tabs::-webkit-scrollbar { display:none; }
+    .day-btn {
+      flex-shrink:0; padding:6px 12px; border-radius:100px;
+      border:1px solid var(--border); background:var(--surface);
+      color:var(--muted); font-size:12px; font-weight:600;
+      cursor:pointer; font-family:inherit; transition:all .2s; white-space:nowrap;
+    }
+    .day-btn.active { background:var(--blue); border-color:var(--blue); color:#fff; }
+    .si-notif { font-size:11px; color:var(--blue-l); margin-top:2px; }
+  </style>
+</head>
+<body class="page">
+<div class="topbar">
+  <span class="topbar-icon">📅</span>
+  <div>
+    <h1>الجدول الدراسي</h1>
+    <div class="topbar-sub" id="today-label"></div>
+  </div>
+  <div class="net-dot online" id="notif-status" title="الإشعارات" style="cursor:pointer;" onclick="requestNotifPerm()"></div>
+</div>
+
+<div class="scroll">
+
+  <!-- Next session countdown -->
+  <div class="next-card" id="next-card">
+    <div class="next-label">الجلسة القادمة</div>
+    <div class="next-subject" id="next-subject">لا توجد جلسات قادمة</div>
+    <div class="timer-display" id="countdown">--:--:--</div>
+    <div style="margin-top:10px;font-size:12px;color:var(--muted);" id="next-info"></div>
+  </div>
+
+  <!-- Add session form -->
+  <div class="section-label">إضافة جلسة دراسة</div>
+  <div class="add-form">
+    <div class="input-group">
+      <div class="input-label">المادة الدراسية</div>
+      <select class="input" id="f-subject">
+        <option value="الرياضيات">🔢 الرياضيات</option>
+        <option value="اللغة العربية">📖 اللغة العربية</option>
+        <option value="العلوم">🔬 العلوم</option>
+        <option value="اللغة الإنجليزية">🌍 اللغة الإنجليزية</option>
+        <option value="التاريخ">🏛️ التاريخ</option>
+        <option value="الجغرافيا">🗺️ الجغرافيا</option>
+        <option value="مادة أخرى">📚 مادة أخرى</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <div class="input-group">
+        <div class="input-label">التاريخ والوقت</div>
+        <input class="input" type="datetime-local" id="f-datetime" />
+      </div>
+      <div class="input-group">
+        <div class="input-label">المدة (دقيقة)</div>
+        <select class="input" id="f-duration">
+          <option value="30">30 د</option>
+          <option value="45">45 د</option>
+          <option value="60" selected>60 د</option>
+          <option value="90">90 د</option>
+          <option value="120">120 د</option>
+        </select>
+      </div>
+    </div>
+    <div class="input-group">
+      <div class="input-label">ملاحظات (اختياري)</div>
+      <input class="input" type="text" id="f-note" placeholder="مثال: مراجعة الفصل الثالث" />
+    </div>
+    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;color:var(--muted);">
+      <label class="toggle"><input type="checkbox" id="f-notif" checked /><span class="toggle-slider"></span></label>
+      إرسال إشعار تذكيري قبل الموعد بـ 5 دقائق
+    </label>
+    <button class="btn btn-blue btn-full" onclick="addSession()">📅 إضافة الجلسة</button>
+  </div>
+
+  <!-- Sessions list -->
+  <div class="section-label" style="display:flex;justify-content:space-between;align-items:center;">
+    <span>الجلسات المجدولة</span>
+    <button class="btn btn-ghost btn-sm" onclick="clearPast()">🗑️ حذف المنتهية</button>
+  </div>
+
+  <!-- Day filter -->
+  <div class="day-tabs" id="day-tabs"></div>
+
+  <div id="sessions-list">
+    <div class="empty"><span class="empty-icon">📅</span>لا توجد جلسات بعد<br><small>أضف جلسة دراسة أولاً</small></div>
+  </div>
+
+</div>
+
+<nav id="bottom-nav"></nav>
+<script src="js/app.js"></script>
+<script>
+let sessions = [], filterDay = 'all', countdownInt = null;
+const DAYS = ['الكل','اليوم','غداً','هذا الأسبوع'];
+
+async function init() {
+  renderBottomNav('schedule');
+  document.getElementById('today-label').textContent = formatDateAr(new Date());
+
+  // Default datetime = now + 1 hour
+  const def = new Date(Date.now() + 3600000);
+  document.getElementById('f-datetime').value = def.toISOString().slice(0,16);
+
+  // Request notification permission on load
+  const granted = await Notify.requestPermission();
+  document.getElementById('notif-status').style.background = granted ? 'var(--green)' : 'var(--red)';
+
+  sessions = await Prefs.get('schedule', []);
+  renderDayTabs();
+  renderSessions();
+  startCountdown();
+
+  // Pre-fill subject from URL
+  const subParam = new URLSearchParams(location.search).get('subject');
+  if (subParam) {
+    const sel = document.getElementById('f-subject');
+    for (let i = 0; i < sel.options.length; i++) {
+      if (sel.options[i].value === subParam) { sel.selectedIndex = i; break; }
+    }
+  }
+}
+
+async function requestNotifPerm() {
+  const granted = await Notify.requestPermission();
+  document.getElementById('notif-status').style.background = granted ? 'var(--green)' : 'var(--red)';
+  showToast(granted ? '🔔 الإشعارات مفعّلة' : '🔕 الإشعارات مرفوضة');
+}
+
+async function addSession() {
+  const subject  = document.getElementById('f-subject').value;
+  const datetime = document.getElementById('f-datetime').value;
+  const duration = parseInt(document.getElementById('f-duration').value);
+  const note     = document.getElementById('f-note').value.trim();
+  const notif    = document.getElementById('f-notif').checked;
+
+  if (!datetime) { showToast('⚠️ اختر التاريخ والوقت'); return; }
+  const dt = new Date(datetime);
+  if (dt <= new Date()) { showToast('⚠️ الوقت يجب أن يكون في المستقبل'); await Haptics.warning(); return; }
+
+  let notifId = null;
+  if (notif) {
+    const notifTime = new Date(dt.getTime() - 5 * 60000);
+    if (notifTime > new Date()) {
+      notifId = await Notify.schedule(
+        '📚 تذكير بالمذاكرة',
+        `بعد 5 دقائق: جلسة ${subject} لمدة ${duration} دقيقة${note ? ' — ' + note : ''}`,
+        notifTime
+      );
+    }
+    // Also schedule at exact time
+    await Notify.schedule(
+      '🎓 حان وقت المذاكرة!',
+      `ابدأ الآن: ${subject} (${duration} دقيقة)${note ? '\n' + note : ''}`,
+      dt
+    );
+  }
+
+  const session = {
+    id: Date.now(),
+    subject, datetime: dt.toISOString(), duration, note, notifId,
+  };
+  sessions.push(session);
+  sessions.sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
+  await Prefs.set('schedule', sessions);
+  await Haptics.success();
+  showToast(`✅ جلسة ${subject} مضافة` + (notif ? ' 🔔' : ''));
+
+  // Reset form
+  const def = new Date(Date.now() + 3600000);
+  document.getElementById('f-datetime').value = def.toISOString().slice(0,16);
+  document.getElementById('f-note').value = '';
+
+  renderSessions();
+  startCountdown();
+}
+
+async function deleteSession(id) {
+  const idx = sessions.findIndex(s => s.id === id);
+  if (idx < 0) return;
+  const s = sessions[idx];
+  const ok = await Dialog.confirm('حذف الجلسة', `حذف جلسة "${s.subject}"؟`);
+  if (!ok) return;
+  if (s.notifId) await Notify.cancel(s.notifId);
+  sessions.splice(idx, 1);
+  await Prefs.set('schedule', sessions);
+  await Haptics.warning();
+  showToast('تم حذف الجلسة');
+  renderSessions();
+  startCountdown();
+}
+
+async function clearPast() {
+  const now = new Date();
+  const before = sessions.length;
+  sessions = sessions.filter(s => new Date(s.datetime) > now);
+  if (before === sessions.length) { showToast('لا توجد جلسات منتهية'); return; }
+  await Prefs.set('schedule', sessions);
+  showToast(`✅ تم حذف ${before - sessions.length} جلسة منتهية`);
+  renderSessions();
+}
+
+function renderDayTabs() {
+  document.getElementById('day-tabs').innerHTML = DAYS.map((d, i) =>
+    `<button class="day-btn${i===0?' active':''}" onclick="setFilter('${['all','today','tomorrow','week'][i]}',this)">${d}</button>`
+  ).join('');
+}
+
+function setFilter(val, btn) {
+  filterDay = val;
+  document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderSessions();
+}
+
+function filterSessions(ss) {
+  const now  = new Date();
+  const tod  = new Date(); tod.setHours(0,0,0,0);
+  const tom  = new Date(tod); tom.setDate(tom.getDate()+1);
+  const tom2 = new Date(tom); tom2.setDate(tom2.getDate()+1);
+  const week = new Date(tod); week.setDate(week.getDate()+7);
+  return ss.filter(s => {
+    const d = new Date(s.datetime);
+    if (filterDay === 'today')    return d >= tod && d < tom;
+    if (filterDay === 'tomorrow') return d >= tom && d < tom2;
+    if (filterDay === 'week')     return d >= now && d < week;
+    return true;
+  });
+}
+
+function renderSessions() {
+  const el = document.getElementById('sessions-list');
+  const filtered = filterSessions(sessions);
+  if (!filtered.length) {
+    el.innerHTML = `<div class="empty"><span class="empty-icon">📅</span>لا توجد جلسات في هذا النطاق</div>`;
+    return;
+  }
+  const now = new Date();
+  el.innerHTML = filtered.map(s => {
+    const d    = new Date(s.datetime);
+    const past = d < now;
+    const subjectIcons = {'الرياضيات':'🔢','اللغة العربية':'📖','العلوم':'🔬','اللغة الإنجليزية':'🌍','التاريخ':'🏛️','الجغرافيا':'🗺️'};
+    const icon = subjectIcons[s.subject] || '📚';
+    return `
+    <div class="schedule-item" style="margin-bottom:8px;opacity:${past?0.5:1};">
+      <div class="si-time">
+        ${icon}<br>${formatTime12(d)}
+      </div>
+      <div class="si-body">
+        <div class="si-title">${s.subject}</div>
+        <div class="si-sub">${formatDateAr(d)} · ${s.duration} دقيقة${s.note ? ' · ' + s.note : ''}</div>
+        ${s.notifId ? '<div class="si-notif">🔔 إشعار مجدول</div>' : ''}
+      </div>
+      ${past
+        ? '<span class="badge badge-muted">منتهية</span>'
+        : '<span class="badge badge-blue">قادمة</span>'}
+      <span class="si-del" onclick="deleteSession(${s.id})">✕</span>
+    </div>`;
+  }).join('');
+}
+
+function getNextSession() {
+  const now = new Date();
+  return sessions.filter(s => new Date(s.datetime) > now).sort((a,b) => new Date(a.datetime)-new Date(b.datetime))[0] || null;
+}
+
+function startCountdown() {
+  clearInterval(countdownInt);
+  const next = getNextSession();
+  if (!next) {
+    document.getElementById('next-subject').textContent = 'لا توجد جلسات قادمة';
+    document.getElementById('countdown').textContent = '--:--:--';
+    document.getElementById('next-info').textContent = '';
+    return;
+  }
+  document.getElementById('next-subject').textContent = next.subject;
+  document.getElementById('next-info').textContent = `${formatDateAr(new Date(next.datetime))} · ${formatTime12(new Date(next.datetime))} · ${next.duration} دقيقة`;
+
+  countdownInt = setInterval(() => {
+    const ms = new Date(next.datetime) - new Date();
+    if (ms <= 0) {
+      document.getElementById('countdown').textContent = '🎯 حان الوقت!';
+      clearInterval(countdownInt);
+      setTimeout(startCountdown, 5000);
+      return;
+    }
+    document.getElementById('countdown').textContent = formatCountdown(ms);
+  }, 1000);
+}
+
+init();
+</script>
+</body>
+</html>

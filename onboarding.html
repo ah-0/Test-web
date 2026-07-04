@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>مرحباً — AQB EDU</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    body { display: flex; flex-direction: column; min-height: 100vh; }
+    .ob-wrap { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .ob-slides { flex: 1; position: relative; }
+    .ob-footer { padding: 20px 24px 40px; display: flex; flex-direction: column; gap: 12px; }
+    .ob-slide { animation: fadeIn .35s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    .ob-feature-row { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+    .ob-feature {
+      display: flex; align-items: center; gap: 12px;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 12px 14px; text-align: right;
+    }
+    .ob-feature .of-icon { font-size: 24px; flex-shrink: 0; }
+    .ob-feature .of-text { font-size: 13px; color: var(--muted); }
+    .ob-name-wrap { width: 100%; background: var(--card); border-radius: var(--radius); padding: 20px; }
+    .ob-name-wrap .input { font-size: 16px; padding: 14px; border-radius: 10px; }
+    .ob-name-hint { font-size: 13px; color: var(--muted); text-align: center; }
+  </style>
+</head>
+<body>
+<div class="ob-wrap">
+  <div class="ob-slides">
+
+    <!-- Slide 1 -->
+    <div class="ob-slide active" id="slide-0">
+      <div style="padding:40px 24px 20px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:16px;">
+        <div class="ob-emoji">🎓</div>
+        <h1 class="ob-title">مرحباً بك في AQB EDU</h1>
+        <p class="ob-desc">منصتك التعليمية الشاملة للدراسة الذكية وتنظيم الوقت وتحقيق أهدافك الأكاديمية</p>
+        <div class="ob-feature-row" style="margin-top:8px;">
+          <div class="ob-feature">
+            <span class="of-icon">📚</span>
+            <span class="of-text">مواد ودروس منظّمة وسهلة الوصول</span>
+          </div>
+          <div class="ob-feature">
+            <span class="of-icon">🃏</span>
+            <span class="of-text">بطاقات تعليمية تفاعلية للحفظ السريع</span>
+          </div>
+          <div class="ob-feature">
+            <span class="of-icon">📝</span>
+            <span class="of-text">اختبارات تفاعلية لقياس مستواك</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 2 -->
+    <div class="ob-slide" id="slide-1" style="display:none;">
+      <div style="padding:40px 24px 20px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:16px;">
+        <div class="ob-emoji">📅</div>
+        <h1 class="ob-title">نظّم جدولك الدراسي</h1>
+        <p class="ob-desc">أضف مواعيد مذاكرتك واضبط مؤقتاً، وسيصلك إشعار تلقائي عند حلول وقت كل مادة</p>
+        <div class="ob-feature-row" style="margin-top:8px;">
+          <div class="ob-feature">
+            <span class="of-icon">⏰</span>
+            <span class="of-text">مؤقت عدّ تنازلي حتى موعد المذاكرة</span>
+          </div>
+          <div class="ob-feature">
+            <span class="of-icon">🔔</span>
+            <span class="of-text">إشعارات محلية تذكّرك بالمادة والوقت</span>
+          </div>
+          <div class="ob-feature">
+            <span class="of-icon">📊</span>
+            <span class="of-text">تتبّع تقدمك واحتفظ بسجل مذاكرتك</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 3 -->
+    <div class="ob-slide" id="slide-2" style="display:none;">
+      <div style="padding:32px 24px 16px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:16px;">
+        <div class="ob-emoji">✨</div>
+        <h1 class="ob-title">ابدأ رحلتك الآن</h1>
+        <p class="ob-desc">أخبرنا باسمك لنخصّص تجربتك</p>
+        <div class="ob-name-wrap">
+          <input class="input" id="name-input" type="text" placeholder="اكتب اسمك هنا..." maxlength="30" />
+          <p class="ob-name-hint" style="margin-top:10px;">يُستخدم فقط لتخصيص التطبيق — لا يُرسل لأي خادم</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <div class="ob-footer">
+    <div class="ob-dots" id="ob-dots">
+      <div class="ob-dot active"></div>
+      <div class="ob-dot"></div>
+      <div class="ob-dot"></div>
+    </div>
+    <button class="btn btn-blue btn-full" id="ob-next" onclick="nextSlide()">التالي →</button>
+    <button class="btn btn-ghost btn-full" id="ob-skip" onclick="skipOnboarding()" style="font-size:13px;">تخطّي</button>
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+<script>
+let currentSlide = 0;
+const totalSlides = 3;
+
+async function init() {
+  // If already onboarded, go to home
+  const done = await Prefs.get('onboarded', false);
+  if (done) { location.href = 'index.html'; return; }
+  updateDots();
+}
+
+function showSlide(n) {
+  document.querySelectorAll('.ob-slide').forEach((s, i) => {
+    s.style.display = i === n ? '' : 'none';
+    if (i === n) s.classList.add('active');
+    else s.classList.remove('active');
+  });
+  currentSlide = n;
+  updateDots();
+  const nextBtn = document.getElementById('ob-next');
+  const skipBtn = document.getElementById('ob-skip');
+  if (n === totalSlides - 1) {
+    nextBtn.textContent = '🚀 ابدأ الآن';
+    skipBtn.style.display = 'none';
+  } else {
+    nextBtn.textContent = 'التالي →';
+    skipBtn.style.display = '';
+  }
+}
+
+function updateDots() {
+  document.querySelectorAll('.ob-dot').forEach((d, i) => {
+    d.classList.toggle('active', i === currentSlide);
+  });
+}
+
+async function nextSlide() {
+  await Haptics.impact('LIGHT');
+  if (currentSlide < totalSlides - 1) {
+    showSlide(currentSlide + 1);
+  } else {
+    await finishOnboarding();
+  }
+}
+
+async function finishOnboarding() {
+  const nameInput = document.getElementById('name-input').value.trim();
+  if (!nameInput) {
+    showToast('⚠️ الرجاء إدخال اسمك');
+    await Haptics.warning();
+    return;
+  }
+  await Prefs.set('name', nameInput);
+  await Prefs.set('onboarded', true);
+  await Prefs.set('points', 0);
+  await Prefs.set('streak', 0);
+  await Haptics.success();
+  showToast('🎉 أهلاً ' + nameInput + '!');
+  setTimeout(() => { location.href = 'index.html'; }, 800);
+}
+
+async function skipOnboarding() {
+  await Prefs.set('onboarded', true);
+  location.href = 'index.html';
+}
+
+// Swipe support
+let touchStartX = 0;
+document.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].clientX; });
+document.addEventListener('touchend', e => {
+  const dx = touchStartX - e.changedTouches[0].clientX;
+  if (Math.abs(dx) > 60) {
+    if (dx > 0 && currentSlide < totalSlides - 1) showSlide(currentSlide + 1);
+    if (dx < 0 && currentSlide > 0) showSlide(currentSlide - 1);
+  }
+});
+
+init();
+</script>
+</body>
+</html>

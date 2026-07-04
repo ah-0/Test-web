@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>الإشعارات — AQB EDU</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .perm-banner {
+      background: #450a0a; border: 1px solid #7f1d1d; border-radius: var(--radius);
+      padding: 14px 16px; display: flex; align-items: center; gap: 12px;
+    }
+    .perm-banner.ok { background: #14532d; border-color: #166534; }
+    .perm-icon { font-size: 24px; flex-shrink: 0; }
+    .perm-text { flex: 1; font-size: 13px; }
+    .reminder-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 16px; cursor: pointer;
+    }
+    .reminder-row + .reminder-row { border-top: 1px solid var(--border); }
+    .rr-icon  { font-size: 20px; flex-shrink: 0; }
+    .rr-body  { flex: 1; }
+    .rr-title { font-size: 14px; font-weight: 600; }
+    .rr-sub   { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  </style>
+</head>
+<body class="page">
+<div class="topbar">
+  <a href="javascript:history.back()" style="font-size:22px;text-decoration:none;">←</a>
+  <h1>الإشعارات</h1>
+  <button class="btn btn-ghost btn-sm" onclick="clearAll()">مسح الكل</button>
+</div>
+
+<div class="scroll">
+
+  <!-- Permission banner -->
+  <div class="perm-banner" id="perm-banner">
+    <span class="perm-icon">🔕</span>
+    <div class="perm-text">الإشعارات غير مفعّلة — اضغط للسماح</div>
+    <button class="btn btn-red btn-sm" onclick="requestPerm()">تفعيل</button>
+  </div>
+
+  <!-- Daily reminders -->
+  <div class="section-label">تذكيرات يومية</div>
+  <div class="card" id="reminders-card">
+    <div class="reminder-row">
+      <span class="rr-icon">🌅</span>
+      <div class="rr-body">
+        <div class="rr-title">تذكير صباحي</div>
+        <div class="rr-sub" id="morning-time">8:00 ص · كل يوم</div>
+      </div>
+      <label class="toggle"><input type="checkbox" id="morning-toggle" onchange="toggleReminder('morning',this)" /><span class="toggle-slider"></span></label>
+    </div>
+    <div class="reminder-row">
+      <span class="rr-icon">🌆</span>
+      <div class="rr-body">
+        <div class="rr-title">تذكير مسائي</div>
+        <div class="rr-sub" id="evening-time">7:00 م · كل يوم</div>
+      </div>
+      <label class="toggle"><input type="checkbox" id="evening-toggle" onchange="toggleReminder('evening',this)" /><span class="toggle-slider"></span></label>
+    </div>
+    <div class="reminder-row">
+      <span class="rr-icon">📅</span>
+      <div class="rr-body">
+        <div class="rr-title">تذكير قبل موعد الجدول</div>
+        <div class="rr-sub">5 دقائق قبل كل جلسة مجدولة</div>
+      </div>
+      <label class="toggle"><input type="checkbox" id="schedule-toggle" checked onchange="toggleScheduleNotif(this)" /><span class="toggle-slider"></span></label>
+    </div>
+  </div>
+
+  <!-- Reminder time settings -->
+  <div class="card" id="time-settings" style="display:none;">
+    <div class="card-header">
+      <div class="card-icon" style="background:#1e3a5f;">⏰</div>
+      <div><div class="card-title">وقت التذكير</div><div class="card-sub">اضبط وقت التذكير اليومي</div></div>
+    </div>
+    <div class="card-body">
+      <div class="input-group">
+        <div class="input-label">التذكير الصباحي</div>
+        <input class="input" type="time" id="morning-input" value="08:00" onchange="saveReminderTime('morning')" />
+      </div>
+      <div class="input-group">
+        <div class="input-label">التذكير المسائي</div>
+        <input class="input" type="time" id="evening-input" value="19:00" onchange="saveReminderTime('evening')" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Scheduled from study plan -->
+  <div class="section-label">إشعارات الجدول الدراسي</div>
+  <div id="schedule-notifs">
+    <div class="empty"><span class="empty-icon">📅</span>لا توجد إشعارات مجدولة<br><a href="schedule.html" style="color:var(--blue-l);font-size:13px;display:inline-block;margin-top:8px;">إضافة جلسة دراسة</a></div>
+  </div>
+
+  <!-- Tip notifications -->
+  <div class="section-label">إشعارات التطبيق</div>
+  <div id="tip-notifs">
+    <div class="notif-item" style="margin-bottom:8px;">
+      <div class="ni-icon">🎓</div>
+      <div class="ni-body">
+        <div class="ni-title">مرحباً بك في AQB EDU!</div>
+        <div class="ni-time">ابدأ رحلتك التعليمية الآن</div>
+      </div>
+    </div>
+    <div class="notif-item" style="margin-bottom:8px;">
+      <div class="ni-icon">💡</div>
+      <div class="ni-body">
+        <div class="ni-title">نصيحة اليوم</div>
+        <div class="ni-time">المراجعة المنتظمة أفضل من الدراسة المكثفة ليلة الامتحان</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Send test -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon" style="background:#1e3a5f;">🧪</div>
+      <div><div class="card-title">اختبار الإشعارات</div><div class="card-sub">تأكد من عمل الإشعارات</div></div>
+    </div>
+    <div class="card-body">
+      <button class="btn btn-blue btn-full" onclick="sendTest()">إرسال إشعار تجريبي</button>
+    </div>
+  </div>
+
+</div>
+
+<nav id="bottom-nav"></nav>
+<script src="js/app.js"></script>
+<script>
+let permGranted = false;
+
+async function init() {
+  renderBottomNav('');
+
+  // Check permission
+  permGranted = await Notify.requestPermission().catch(() => false);
+  updatePermBanner(permGranted);
+
+  // Load toggles
+  const morningOn = await Prefs.get('notif_morning', false);
+  const eveningOn = await Prefs.get('notif_evening', false);
+  document.getElementById('morning-toggle').checked = morningOn;
+  document.getElementById('evening-toggle').checked = eveningOn;
+  if (morningOn || eveningOn) {
+    document.getElementById('time-settings').style.display = '';
+  }
+
+  const morningT = await Prefs.get('notif_morning_time', '08:00');
+  const eveningT = await Prefs.get('notif_evening_time', '19:00');
+  document.getElementById('morning-input').value = morningT;
+  document.getElementById('evening-input').value = eveningT;
+  document.getElementById('morning-time').textContent = formatTime12Label(morningT) + ' · كل يوم';
+  document.getElementById('evening-time').textContent = formatTime12Label(eveningT) + ' · كل يوم';
+
+  // Schedule notifications from study plan
+  const sessions = await Prefs.get('schedule', []);
+  const upcoming = sessions.filter(s => new Date(s.datetime) > new Date()).slice(0, 5);
+  if (upcoming.length > 0) {
+    document.getElementById('schedule-notifs').innerHTML = upcoming.map(s => {
+      const d = new Date(s.datetime);
+      return `<div class="notif-item" style="margin-bottom:8px;">
+        <div class="ni-icon">📅</div>
+        <div class="ni-body">
+          <div class="ni-title">جلسة ${s.subject}</div>
+          <div class="ni-time">${formatDateAr(d)} · ${formatTime12(d)} · ${s.duration} دقيقة</div>
+        </div>
+        ${s.notifId ? '<span class="badge badge-blue">🔔 مجدول</span>' : '<span class="badge badge-muted">بدون إشعار</span>'}
+      </div>`;
+    }).join('');
+  }
+}
+
+function formatTime12Label(timeStr) {
+  const [h,m] = timeStr.split(':').map(Number);
+  const ampm = h >= 12 ? 'م' : 'ص';
+  return `${h%12||12}:${pad2(m)} ${ampm}`;
+}
+
+function updatePermBanner(granted) {
+  const b = document.getElementById('perm-banner');
+  if (granted) {
+    b.className = 'perm-banner ok';
+    b.innerHTML = '<span class="perm-icon">🔔</span><div class="perm-text">الإشعارات مفعّلة ✅</div>';
+  } else {
+    b.className = 'perm-banner';
+    b.innerHTML = '<span class="perm-icon">🔕</span><div class="perm-text">الإشعارات غير مفعّلة</div><button class="btn btn-red btn-sm" onclick="requestPerm()">تفعيل</button>';
+  }
+}
+
+async function requestPerm() {
+  permGranted = await Notify.requestPermission();
+  updatePermBanner(permGranted);
+  showToast(permGranted ? '🔔 تم تفعيل الإشعارات' : '❌ تم رفض الإشعارات');
+}
+
+async function toggleReminder(type, el) {
+  await Prefs.set('notif_' + type, el.checked);
+  const anyOn = document.getElementById('morning-toggle').checked ||
+                document.getElementById('evening-toggle').checked;
+  document.getElementById('time-settings').style.display = anyOn ? '' : 'none';
+
+  if (el.checked && permGranted) {
+    const timeStr = await Prefs.get('notif_' + type + '_time', type==='morning'?'08:00':'19:00');
+    await scheduleDaily(type, timeStr);
+    showToast('🔔 تم تفعيل التذكير');
+  } else {
+    showToast('🔕 تم إيقاف التذكير');
+  }
+  await Haptics.impact('LIGHT');
+}
+
+async function saveReminderTime(type) {
+  const val = document.getElementById(type + '-input').value;
+  await Prefs.set('notif_' + type + '_time', val);
+  document.getElementById(type + '-time').textContent = formatTime12Label(val) + ' · كل يوم';
+  if (await Prefs.get('notif_' + type, false)) {
+    await scheduleDaily(type, val);
+    showToast('✅ تم تحديث وقت التذكير');
+  }
+}
+
+async function scheduleDaily(type, timeStr) {
+  const [h, m] = timeStr.split(':').map(Number);
+  const at = new Date();
+  at.setHours(h, m, 0, 0);
+  if (at <= new Date()) at.setDate(at.getDate() + 1);
+  const msgs = {
+    morning: { title:'📚 صباح الدراسة!', body:'حان وقت مراجعة دروسك — ابدأ يومك بنشاط!' },
+    evening: { title:'🌆 تذكير مسائي', body:'لا تنسَ مراجعة دروسك قبل النوم!' },
+  };
+  const id = await Prefs.get('notif_' + type + '_id', null);
+  if (id) await Notify.cancel(id);
+  const nid = await Notify.schedule(msgs[type].title, msgs[type].body, at);
+  await Prefs.set('notif_' + type + '_id', nid);
+}
+
+async function toggleScheduleNotif(el) {
+  await Prefs.set('notif_schedule_enabled', el.checked);
+  await Haptics.impact('LIGHT');
+  showToast(el.checked ? '🔔 إشعارات الجدول مفعّلة' : '🔕 إشعارات الجدول موقوفة');
+}
+
+async function sendTest() {
+  if (!permGranted) {
+    await requestPerm();
+    if (!permGranted) return;
+  }
+  const in5 = new Date(Date.now() + 5000);
+  await Notify.schedule('🧪 إشعار تجريبي', 'الإشعارات تعمل بشكل صحيح في AQB EDU! 🎉', in5);
+  showToast('✅ سيصل الإشعار خلال 5 ثوانٍ');
+  await Haptics.success();
+}
+
+async function clearAll() {
+  const ok = await Dialog.confirm('مسح الإشعارات', 'هل تريد إيقاف جميع التذكيرات اليومية؟');
+  if (!ok) return;
+  document.getElementById('morning-toggle').checked = false;
+  document.getElementById('evening-toggle').checked = false;
+  await Prefs.set('notif_morning', false);
+  await Prefs.set('notif_evening', false);
+  document.getElementById('time-settings').style.display = 'none';
+  await Haptics.warning();
+  showToast('🗑️ تم إيقاف التذكيرات');
+}
+
+init();
+</script>
+</body>
+</html>

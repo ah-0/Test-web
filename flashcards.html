@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>البطاقات التعليمية — AQB EDU</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .fc-subject-tabs { display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; }
+    .fc-subject-tabs::-webkit-scrollbar { display:none; }
+    .tab-btn {
+      flex-shrink:0; padding:7px 14px; border-radius:100px; border:1px solid var(--border);
+      background:var(--surface); color:var(--muted); font-size:13px; font-weight:600;
+      cursor:pointer; font-family:inherit; transition:all .2s;
+    }
+    .tab-btn.active { background:var(--blue); border-color:var(--blue); color:#fff; }
+    .fc-count { text-align:center; font-size:12px; color:var(--muted); }
+    .fc-actions { display:flex; gap:8px; }
+    .fc-actions .btn { flex:1; }
+    .swipe-hint { text-align:center; font-size:11px; color:var(--muted); }
+    .known-bar-wrap { background:var(--surface); border-radius:var(--radius); padding:12px 16px; }
+    .known-bar-label { display:flex; justify-content:space-between; font-size:12px; margin-bottom:6px; }
+  </style>
+</head>
+<body class="page">
+<div class="topbar">
+  <a href="javascript:history.back()" style="font-size:22px;text-decoration:none;">←</a>
+  <h1>البطاقات التعليمية</h1>
+  <span id="fc-badge" class="badge badge-blue">0/0</span>
+</div>
+
+<div class="scroll">
+  <!-- Subject tabs -->
+  <div class="fc-subject-tabs" id="subject-tabs"></div>
+
+  <!-- Card -->
+  <div class="fc-count" id="fc-count">البطاقة 1 من 10</div>
+
+  <div class="flashcard-wrapper" id="fc-wrapper">
+    <div class="flashcard" id="fc-card" onclick="flipCard()">
+      <div class="fc-face">
+        <div class="fc-label">السؤال 💡</div>
+        <div class="fc-text" id="fc-front"></div>
+        <div class="fc-hint">انقر للكشف عن الإجابة</div>
+      </div>
+      <div class="fc-face fc-back">
+        <div class="fc-label">الإجابة ✅</div>
+        <div class="fc-text" id="fc-back-text"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="swipe-hint">اسحب يساراً للتالي • يميناً للسابق</div>
+
+  <!-- Actions -->
+  <div class="fc-actions" id="fc-actions" style="display:none;">
+    <button class="btn btn-red" onclick="markCard('review')">🔁 راجع مرة أخرى</button>
+    <button class="btn btn-green" onclick="markCard('known')">✅ أعرفها</button>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-ghost" onclick="prevCard()">← السابق</button>
+    <button class="btn btn-ghost" onclick="nextCard()">التالي →</button>
+  </div>
+
+  <!-- Progress -->
+  <div class="known-bar-wrap">
+    <div class="known-bar-label">
+      <span>تقدمك</span>
+      <span id="known-pct" class="text-green">0%</span>
+    </div>
+    <div class="progress-wrap"><div class="progress-bar green" id="known-bar" style="width:0%"></div></div>
+    <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:12px;color:var(--muted);">
+      <span>✅ أعرفها: <span id="known-count">0</span></span>
+      <span>🔁 مراجعة: <span id="review-count">0</span></span>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-yellow btn-sm" onclick="shuffleCards()">🔀 خلط</button>
+    <button class="btn btn-ghost btn-sm" onclick="resetProgress()">↺ إعادة</button>
+  </div>
+</div>
+
+<nav id="bottom-nav"></nav>
+<script src="js/app.js"></script>
+<script>
+const CARDS = {
+  math: [
+    { front:'ما هي قاعدة مساحة المثلث؟',           back:'القاعدة × الارتفاع ÷ 2' },
+    { front:'ما هو قانون فيثاغورس؟',               back:'أ² + ب² = جـ²' },
+    { front:'كيف تحسب محيط الدائرة؟',              back:'2 × π × نصف القطر' },
+    { front:'ما هو الجذر التربيعي لـ 256؟',         back:'16' },
+    { front:'ما مساحة الدائرة؟',                   back:'π × نصف القطر²' },
+    { front:'ما قانون الفائدة البسيطة؟',            back:'الأصل × النسبة × الزمن ÷ 100' },
+    { front:'ما ناتج (x+y)² ؟',                    back:'x² + 2xy + y²' },
+    { front:'ما مجموع زوايا المثلث؟',               back:'180 درجة' },
+    { front:'ما عدد وجوه المكعب؟',                  back:'6 وجوه' },
+    { front:'ما مجموع زوايا الرباعي؟',              back:'360 درجة' },
+  ],
+  arabic: [
+    { front:'ما هو المبتدأ؟',            back:'اسم مرفوع يُبتدأ به الكلام' },
+    { front:'ما علامات الفعل الماضي؟',   back:'قبوله تاء التأنيث الساكنة أو تاء الفاعل' },
+    { front:'ما الفرق بين المعرفة والنكرة؟', back:'المعرفة محددة (+ ال التعريف أو علم)، النكرة غير محددة' },
+    { front:'ما هو الحال؟',              back:'اسم منصوب يبيّن هيئة صاحبه' },
+    { front:'متى يُضاف التنوين؟',        back:'للأسماء النكرة غير المضافة وغير المقترنة بـ"ال"' },
+    { front:'ما جمع المذكر السالم؟',     back:'ما دلّ على جمع بزيادة واو ونون أو ياء ونون' },
+    { front:'ما هو الضمير المتصل؟',      back:'ضمير يتصل بالكلمة التي قبله ولا يستقل بالنطق' },
+    { front:'ما هو الفعل اللازم؟',       back:'فعل لا يتعدى أثره إلى مفعول به' },
+    { front:'ما الفرق بين النعت والبدل؟', back:'النعت يصف المنعوت، البدل يحل محل المبدل منه' },
+    { front:'ما علامات الاسم؟',          back:'قبوله التنوين، ال التعريف، الجر، النداء' },
+  ],
+  science: [
+    { front:'ما هي المقاومة الكهربائية؟',  back:'قانون أوم: الجهد ÷ التيار (V/I)، وحدتها الأوم Ω' },
+    { front:'ما تعريف الخلية؟',            back:'الوحدة الأساسية للحياة وأصغر وحدة حية' },
+    { front:'ما مكونات الذرة؟',            back:'بروتونات (موجبة) + نيوترونات (محايدة) في النواة + إلكترونات (سالبة)' },
+    { front:'ما قانون نيوتن الأول؟',       back:'الجسم الساكن يبقى ساكناً والمتحرك يستمر في حركته ما لم تؤثر عليه قوة' },
+    { front:'ما تعريف الضغط؟',             back:'القوة المؤثرة على وحدة المساحة (P = F/A)' },
+    { front:'ما الفرق بين المادة والطاقة؟',back:'المادة لها كتلة وتشغل حجماً، الطاقة قدرة على إنجاز الشغل' },
+    { front:'ما وحدة قياس الطاقة؟',        back:'الجول (J)' },
+    { front:'ما مكونات الدم؟',             back:'بلازما + خلايا دم حمراء + كريات بيضاء + صفائح دموية' },
+    { front:'ما مراحل دورة الماء؟',        back:'تبخر → تكاثف → تساقط → جريان' },
+    { front:'ما تعريف التمثيل الضوئي؟',   back:'عملية تحويل ضوء الشمس + ماء + CO₂ إلى غذاء + أكسجين' },
+  ],
+  english: [
+    { front:'What are the 5 senses?',       back:'Sight, Hearing, Smell, Taste, Touch' },
+    { front:'What is a noun?',              back:'A word that names a person, place, thing, or idea' },
+    { front:'Present perfect formula?',     back:'Subject + have/has + past participle' },
+    { front:'What is an adjective?',        back:'A word that describes or modifies a noun' },
+    { front:'Passive voice formula?',       back:'Subject + be (conjugated) + past participle' },
+    { front:'What is a synonym?',           back:'A word with the same or similar meaning' },
+    { front:'Comparative vs superlative?',  back:'Comparative: more/+er | Superlative: most/+est' },
+    { front:'What is a conjunction?',       back:'A word that connects clauses (and, but, or, so, because...)' },
+    { front:'Future simple tense formula?', back:'Subject + will + base verb' },
+    { front:'What is a preposition?',       back:'A word showing relation (in, on, at, by, with, under...)' },
+  ],
+  general: [
+    { front:'ما معنى كلمة "Renaissance"؟',  back:'عصر النهضة — حركة فكرية وفنية نشأت في إيطاليا القرن 14-17م' },
+    { front:'ما هو الـ DNA؟',               back:'الحمض النووي الريبوزي منقوص الأكسجين — يحمل المعلومات الوراثية' },
+    { front:'ما أسرع حيوان بري؟',           back:'الفهد — يبلغ 112 كم/ساعة' },
+    { front:'ما المقصود بالذكاء الاصطناعي؟', back:'قدرة الآلات على محاكاة التفكير البشري واتخاذ القرارات' },
+    { front:'من اخترع الهاتف؟',             back:'ألكسندر غراهام بيل (1876م)' },
+    { front:'ما هو البروتوكول HTTP؟',        back:'بروتوكول نقل النص التشعبي — أساس التواصل في الويب' },
+    { front:'ما الفرق بين المناخ والطقس؟',  back:'الطقس: حالة الجو قصيرة المدى. المناخ: متوسط الطقس على مدى سنوات' },
+    { front:'ما هي الطاقة المتجددة؟',       back:'طاقة مستمدة من مصادر متجددة كالشمس والرياح والماء' },
+    { front:'من كتب كتاب "أصل الأنواع"؟',   back:'تشارلز داروين (1859م)' },
+    { front:'ما الفرق بين العلم والتقنية؟',  back:'العلم: فهم الطبيعة. التقنية: تطبيق العلم لحل المشكلات' },
+  ],
+};
+
+const SUBJECTS = [
+  { id:'math',    label:'🔢 رياضيات' },
+  { id:'arabic',  label:'📖 عربي' },
+  { id:'science', label:'🔬 علوم' },
+  { id:'english', label:'🌍 English' },
+  { id:'general', label:'🧠 عام' },
+];
+
+let cards = [], currentIdx = 0, isFlipped = false;
+let known = new Set(), review = new Set();
+let currentSubject = '';
+let touchStartX = 0;
+
+function init() {
+  renderBottomNav('flashcards');
+
+  // Subject from URL
+  const param = new URLSearchParams(location.search).get('subject');
+  const subj  = SUBJECTS.find(s => s.id === param) ? param : 'math';
+  renderTabs(subj);
+  loadSubject(subj);
+
+  // Swipe
+  const wrap = document.getElementById('fc-wrapper');
+  wrap.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].clientX; });
+  wrap.addEventListener('touchend', async e => {
+    const dx = touchStartX - e.changedTouches[0].clientX;
+    if (Math.abs(dx) > 50) {
+      if (dx > 0) await nextCard();
+      else        await prevCard();
+    }
+  });
+}
+
+function renderTabs(active) {
+  document.getElementById('subject-tabs').innerHTML = SUBJECTS.map(s =>
+    `<button class="tab-btn${s.id===active?' active':''}" onclick="loadSubject('${s.id}')">${s.label}</button>`
+  ).join('');
+}
+
+async function loadSubject(id) {
+  currentSubject = id;
+  cards  = [...(CARDS[id] || CARDS.general)];
+  known  = new Set(await Prefs.get('fc_known_' + id, []));
+  review = new Set(await Prefs.get('fc_review_' + id, []));
+  currentIdx = 0;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.textContent.includes(SUBJECTS.find(s=>s.id===id)?.label.split(' ')[1]||'')));
+  renderTabs(id);
+  renderCard();
+  updateProgress();
+}
+
+function renderCard() {
+  if (!cards.length) return;
+  const c = cards[currentIdx];
+  isFlipped = false;
+  const card = document.getElementById('fc-card');
+  card.classList.remove('flipped');
+  document.getElementById('fc-front').textContent = c.front;
+  document.getElementById('fc-back-text').textContent = c.back;
+  document.getElementById('fc-count').textContent = `البطاقة ${currentIdx+1} من ${cards.length}`;
+  document.getElementById('fc-badge').textContent = `${currentIdx+1}/${cards.length}`;
+  document.getElementById('fc-actions').style.display = 'none';
+}
+
+async function flipCard() {
+  const card = document.getElementById('fc-card');
+  isFlipped = !isFlipped;
+  card.classList.toggle('flipped', isFlipped);
+  await Haptics.impact('LIGHT');
+  if (isFlipped) {
+    document.getElementById('fc-actions').style.display = 'flex';
+  }
+}
+
+async function markCard(type) {
+  const id = cards[currentIdx].front;
+  if (type === 'known') {
+    known.add(id); review.delete(id);
+    await Haptics.success();
+    showToast('✅ رائع! محفوظة');
+  } else {
+    review.add(id); known.delete(id);
+    await Haptics.warning();
+    showToast('🔁 ستظهر مجدداً');
+  }
+  await Prefs.set('fc_known_' + currentSubject,  [...known]);
+  await Prefs.set('fc_review_' + currentSubject, [...review]);
+  updateProgress();
+  await nextCard();
+}
+
+async function nextCard() {
+  await Haptics.impact('LIGHT');
+  currentIdx = (currentIdx + 1) % cards.length;
+  renderCard();
+}
+
+async function prevCard() {
+  await Haptics.impact('LIGHT');
+  currentIdx = (currentIdx - 1 + cards.length) % cards.length;
+  renderCard();
+}
+
+function updateProgress() {
+  const total = cards.length;
+  const k = [...known].filter(id => cards.find(c => c.front === id)).length;
+  const r = [...review].filter(id => cards.find(c => c.front === id)).length;
+  const pct = total ? Math.round((k / total) * 100) : 0;
+  document.getElementById('known-count').textContent = k;
+  document.getElementById('review-count').textContent = r;
+  document.getElementById('known-pct').textContent = pct + '%';
+  document.getElementById('known-bar').style.width = pct + '%';
+}
+
+async function shuffleCards() {
+  for (let i = cards.length-1; i>0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [cards[i],cards[j]]=[cards[j],cards[i]];
+  }
+  currentIdx = 0;
+  await Haptics.impact('MEDIUM');
+  showToast('🔀 تم خلط البطاقات');
+  renderCard();
+}
+
+async function resetProgress() {
+  const ok = await Dialog.confirm('إعادة التقدم', 'هل تريد مسح تقدمك في هذا الموضوع؟');
+  if (!ok) return;
+  known.clear(); review.clear();
+  await Prefs.remove('fc_known_' + currentSubject);
+  await Prefs.remove('fc_review_' + currentSubject);
+  updateProgress();
+  await Haptics.warning();
+  showToast('↺ تم إعادة التقدم');
+}
+
+init();
+</script>
+</body>
+</html>
