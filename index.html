@@ -1,449 +1,602 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Native Bridge — لوحة التحكم</title>
-<style>
-  :root {
-    --bg: #0f1117;
-    --surface: #1a1d27;
-    --border: #2d3150;
-    --accent: #6c63ff;
-    --accent2: #00d2a0;
-    --accent3: #ff6b6b;
-    --text: #e8eaed;
-    --muted: #8b8fa8;
-    --radius: 14px;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: 'Segoe UI', Tahoma, system-ui, sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    padding: 16px;
-    font-size: 14px;
-  }
-  h1 {
-    text-align: center;
-    font-size: 20px;
-    font-weight: 700;
-    margin-bottom: 4px;
-    background: linear-gradient(90deg, var(--accent), var(--accent2));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-  .subtitle {
-    text-align: center;
-    color: var(--muted);
-    font-size: 12px;
-    margin-bottom: 20px;
-  }
-  .status-bar {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 10px 14px;
-    margin-bottom: 16px;
-    font-size: 13px;
-  }
-  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-  .dot.green  { background: var(--accent2); box-shadow: 0 0 6px var(--accent2); }
-  .dot.orange { background: #ffa726; box-shadow: 0 0 6px #ffa726; }
-  .dot.red    { background: var(--accent3); box-shadow: 0 0 6px var(--accent3); }
-  .section-title {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: .08em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin: 20px 0 10px;
-  }
-  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .grid.cols-1 { grid-template-columns: 1fr; }
-  .btn {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 14px 10px;
-    cursor: pointer;
-    transition: border-color .2s, transform .1s, background .2s;
-    color: var(--text);
-    font-size: 12px;
-    text-align: center;
-    user-select: none;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .btn:active { transform: scale(.96); background: #21243a; }
-  .btn .icon { font-size: 22px; line-height: 1; }
-  .btn.accent  { border-color: var(--accent);  }
-  .btn.green   { border-color: var(--accent2); }
-  .btn.red     { border-color: var(--accent3); }
-  .btn.orange  { border-color: #ffa726; }
-  input, textarea {
-    width: 100%;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 10px 12px;
-    color: var(--text);
-    font-size: 13px;
-    margin-bottom: 8px;
-    font-family: inherit;
-  }
-  input:focus, textarea:focus {
-    outline: none;
-    border-color: var(--accent);
-  }
-  textarea { resize: vertical; min-height: 70px; }
-  .output-box {
-    background: #0a0c14;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 12px;
-    font-family: 'Courier New', monospace;
-    font-size: 12px;
-    color: var(--accent2);
-    min-height: 60px;
-    word-break: break-all;
-    white-space: pre-wrap;
-    margin-top: 8px;
-  }
-  .divider {
-    height: 1px;
-    background: var(--border);
-    margin: 20px 0;
-  }
-  .row { display: flex; gap: 8px; margin-bottom: 8px; }
-  .row input { margin-bottom: 0; flex: 1; }
-  .row .btn {
-    flex-shrink: 0;
-    padding: 10px 14px;
-    font-size: 13px;
-    flex-direction: row;
-    gap: 6px;
-  }
-  label { font-size: 11px; color: var(--muted); display: block; margin-bottom: 4px; }
-  .badge {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 20px;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: .05em;
-  }
-  .badge.android { background: #1e3a1e; color: var(--accent2); }
-  .badge.web     { background: #1e2a3a; color: #64b5f6; }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>AQB Native</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  /* Notification for web */
-  #toast-container {
-    position: fixed; bottom: 20px; left: 50%;
-    transform: translateX(-50%);
-    z-index: 9999; display: flex; flex-direction: column; gap: 8px; align-items: center;
-  }
-</style>
+    :root {
+      --bg:       #0f0f2e;
+      --surface:  #1a1a4e;
+      --card:     #12123a;
+      --border:   #2a2a6a;
+      --gold:     #f5c518;
+      --gold2:    #d4a500;
+      --text:     #e8e8ff;
+      --muted:    #8888bb;
+      --green:    #22c55e;
+      --red:      #ef4444;
+      --blue:     #3b82f6;
+      --radius:   14px;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, 'Segoe UI', sans-serif;
+      font-size: 15px;
+      overscroll-behavior: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* ── Top bar ── */
+    .topbar {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 18px 12px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .topbar-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--red); flex-shrink: 0;
+    }
+    .topbar-dot.online { background: var(--green); }
+    .topbar h1 { font-size: 17px; font-weight: 700; color: var(--gold); flex: 1; }
+    .topbar-badge {
+      font-size: 11px; padding: 3px 8px; border-radius: 20px;
+      background: var(--surface); color: var(--muted);
+    }
+    .topbar-badge.native { background: #1a3a1a; color: var(--green); }
+
+    /* ── Scroll area ── */
+    .scroll { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+
+    /* ── Section ── */
+    .section-label {
+      font-size: 11px; font-weight: 700; letter-spacing: .08em;
+      color: var(--muted); text-transform: uppercase; padding: 0 2px;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .card-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 14px 16px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .card-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .card-title { font-size: 14px; font-weight: 700; }
+    .card-sub   { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .card-body  { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+
+    /* ── Buttons ── */
+    .btn {
+      display: flex; align-items: center; justify-content: center; gap: 7px;
+      padding: 11px 16px; border-radius: 10px; border: none; cursor: pointer;
+      font-size: 14px; font-weight: 600; letter-spacing: .01em;
+      transition: opacity .15s, transform .1s;
+      -webkit-user-select: none; user-select: none;
+    }
+    .btn:active { opacity: .75; transform: scale(.97); }
+    .btn-gold   { background: var(--gold); color: #0a0a1e; }
+    .btn-ghost  { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+    .btn-green  { background: #14532d; color: var(--green); border: 1px solid #166534; }
+    .btn-blue   { background: #1e3a5f; color: var(--blue); border: 1px solid #1d4ed8; }
+    .btn-red    { background: #450a0a; color: var(--red); border: 1px solid #7f1d1d; }
+    .btn-row    { display: flex; gap: 8px; }
+    .btn-row .btn { flex: 1; }
+
+    /* ── Output box ── */
+    .output {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px 12px;
+      font-size: 12.5px; color: var(--muted); min-height: 44px;
+      word-break: break-all; line-height: 1.6;
+      white-space: pre-wrap;
+    }
+    .output.ok   { color: var(--green); border-color: #166534; }
+    .output.err  { color: var(--red);   border-color: #7f1d1d; }
+    .output.info { color: var(--gold);  border-color: var(--gold2); }
+
+    /* ── Input ── */
+    .input {
+      width: 100%; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px 12px; color: var(--text);
+      font-size: 14px; outline: none;
+    }
+    .input:focus { border-color: var(--gold); }
+
+    /* ── Device info grid ── */
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .info-item {
+      background: var(--surface); border-radius: 8px; border: 1px solid var(--border);
+      padding: 10px 12px;
+    }
+    .info-item .key   { font-size: 10px; color: var(--muted); margin-bottom: 3px; }
+    .info-item .val   { font-size: 13px; font-weight: 600; }
+
+    /* ── Image preview ── */
+    #img-preview {
+      width: 100%; border-radius: 10px; display: none;
+      max-height: 220px; object-fit: cover;
+    }
+
+    /* ── File list ── */
+    .file-item {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--surface); border-radius: 8px;
+      padding: 10px 12px; border: 1px solid var(--border);
+    }
+    .file-item .fi-icon { font-size: 22px; flex-shrink: 0; }
+    .file-item .fi-name { font-size: 13px; font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .file-item .fi-size { font-size: 11px; color: var(--muted); }
+
+    /* ── Notification badge ── */
+    #notif-count {
+      display: inline-block; background: var(--red); color: #fff;
+      font-size: 10px; font-weight: 700; border-radius: 20px;
+      padding: 1px 6px; margin-right: 4px; min-width: 18px; text-align: center;
+    }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+      background: #1c1c3e; border: 1px solid var(--border); color: var(--text);
+      padding: 10px 20px; border-radius: 100px; font-size: 13px;
+      transition: transform .3s; z-index: 999; white-space: nowrap;
+      box-shadow: 0 4px 20px rgba(0,0,0,.5);
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+  </style>
 </head>
 <body>
 
-<h1>🔗 Native Bridge</h1>
-<p class="subtitle">نظام التواصل مع ميزات الهاتف النيتيف</p>
-
-<!-- Status Bar -->
-<div class="status-bar" id="statusBar">
-  <div class="dot" id="statusDot"></div>
-  <span id="statusText">جاري الكشف عن البيئة...</span>
+<!-- ── Top bar ── -->
+<div class="topbar">
+  <div class="topbar-dot" id="net-dot"></div>
+  <h1>🎓 AQB Native</h1>
+  <div class="topbar-badge" id="env-badge">Web</div>
 </div>
 
-<!-- Device Info -->
-<p class="section-title">📱 معلومات الجهاز</p>
-<div class="output-box" id="deviceInfo">اضغط لعرض المعلومات...</div>
-<div class="grid" style="margin-top:8px">
-  <button class="btn accent" onclick="showDeviceInfo()">
-    <span class="icon">ℹ️</span> عرض معلومات الجهاز
-  </button>
-  <button class="btn" onclick="checkNetwork()">
-    <span class="icon">🌐</span> حالة الشبكة
-  </button>
-</div>
+<!-- ── Content ── -->
+<div class="scroll">
 
-<div class="divider"></div>
+  <!-- ── Share ── -->
+  <div class="section-label">مشاركة</div>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon" style="background:#1a2a3a">📤</div>
+      <div><div class="card-title">Native Share</div><div class="card-sub">مشاركة نص أو رابط عبر التطبيقات</div></div>
+    </div>
+    <div class="card-body">
+      <input class="input" id="share-title" placeholder="العنوان" value="بنك الأسئلة الأكاديمي" />
+      <input class="input" id="share-text"  placeholder="النص" value="تطبيق رائع لمراجعة الأسئلة!" />
+      <input class="input" id="share-url"   placeholder="الرابط" value="https://ah-0.github.io/Test-web/" />
+      <button class="btn btn-gold" onclick="doShare()">📤 مشاركة الآن</button>
+      <div class="output" id="share-out">جاهز للمشاركة…</div>
+    </div>
+  </div>
 
-<!-- Notifications & Vibration -->
-<p class="section-title">🔔 الإشعارات والاهتزاز</p>
-<div class="grid">
-  <button class="btn orange" onclick="AB.showToast('مرحباً من التطبيق! 👋')">
-    <span class="icon">💬</span> Toast رسالة
-  </button>
-  <button class="btn orange" onclick="sendNotif()">
-    <span class="icon">🔔</span> إشعار النظام
-  </button>
-  <button class="btn" onclick="AB.vibrate(200)">
-    <span class="icon">📳</span> اهتزاز خفيف
-  </button>
-  <button class="btn" onclick="AB.vibrate(600)">
-    <span class="icon">📳</span> اهتزاز قوي
-  </button>
-</div>
+  <!-- ── Notifications ── -->
+  <div class="section-label">الإشعارات المحلية</div>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon" style="background:#1a1a2e">🔔</div>
+      <div><div class="card-title">Local Notifications</div><div class="card-sub">إرسال إشعار محلي فوري أو مجدول</div></div>
+    </div>
+    <div class="card-body">
+      <input class="input" id="notif-title" placeholder="عنوان الإشعار" value="تذكير دراسي 📚" />
+      <input class="input" id="notif-body"  placeholder="نص الإشعار"   value="حان وقت مراجعة الأسئلة!" />
+      <div class="btn-row">
+        <button class="btn btn-gold"  onclick="sendNotif(0)">🔔 فوري</button>
+        <button class="btn btn-ghost" onclick="sendNotif(5)">⏰ بعد 5 ثوانٍ</button>
+      </div>
+      <button class="btn btn-ghost" onclick="checkNotifPerm()">🔑 التحقق من الإذن</button>
+      <div class="output" id="notif-out">انقر لطلب الإذن أولاً…</div>
+    </div>
+  </div>
 
-<div class="divider"></div>
+  <!-- ── Camera / Gallery ── -->
+  <div class="section-label">الكاميرا والمعرض</div>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon" style="background:#1a0a2e">📷</div>
+      <div><div class="card-title">Camera & Gallery</div><div class="card-sub">التقاط أو اختيار صورة</div></div>
+    </div>
+    <div class="card-body">
+      <div class="btn-row">
+        <button class="btn btn-gold"  onclick="openCamera()">📷 كاميرا</button>
+        <button class="btn btn-ghost" onclick="openGallery()">🖼️ معرض</button>
+      </div>
+      <img id="img-preview" alt="معاينة الصورة" />
+      <div class="output" id="cam-out">لم يتم التقاط صورة بعد…</div>
+    </div>
+  </div>
 
-<!-- Sharing -->
-<p class="section-title">🔗 مشاركة المحتوى</p>
-<label>النص المراد مشاركته:</label>
-<textarea id="shareText">مرحباً! شاهد هذا الموقع الرائع 🌟 https://example.com</textarea>
-<div class="grid">
-  <button class="btn green" onclick="doShareText()">
-    <span class="icon">📤</span> مشاركة النص
-  </button>
-  <button class="btn" onclick="doCopyText()">
-    <span class="icon">📋</span> نسخ للحافظة
-  </button>
-</div>
-<label style="margin-top:10px">مسار الصورة (داخل الجهاز):</label>
-<div class="row">
-  <input type="text" id="imagePath" placeholder="/storage/emulated/0/DCIM/photo.jpg">
-  <button class="btn green" onclick="doShareImage()">
-    <span class="icon">🖼️</span> مشاركة
-  </button>
-</div>
+  <!-- ── Clipboard ── -->
+  <div class="section-label">الحافظة</div>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon" style="background:#0a2a1a">📋</div>
+      <div><div class="card-title">Clipboard</div><div class="card-sub">نسخ ولصق النصوص</div></div>
+    </div>
+    <div class="card-body">
+      <input class="input" id="clip-text" placeholder="النص المراد نسخه" value="مرحباً من AQB App!" />
+      <div class="btn-row">
+        <button class="btn btn-green" onclick="doCopy()">📋 نسخ</button>
+        <button class="btn btn-ghost" onclick="doPaste()">📄 لصق</button>
+      </div>
+      <div class="output" id="clip-out">—</div>
+    </div>
+  </div>
 
-<div class="divider"></div>
+  <!-- ── Haptics ── -->
+  <div class="section-label">الاهتزاز</div>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon" style="background:#2a1a0a">📳</div>
+      <div><div class="card-title">Haptics / Vibration</div><div class="card-sub">اهتزاز تغذية راجعة</div></div>
+    </div>
+    <div class="card-body">
+      <div class="btn-row">
+        <button class="btn btn-gold"  onclick="haptic('LIGHT')">خفيف</button>
+        <button class="btn btn-ghost" onclick="haptic('MEDIUM')">متوسط</button>
+        <button class="btn btn-red"   onclick="haptic('HEAVY')">قوي</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="haptic('SUCCESS')">✅ نجاح</button>
+        <button class="btn btn-ghost" onclick="haptic('WARNING')">⚠️ تحذير</button>
+        <button class="btn btn-ghost" onclick="haptic('ERROR')">❌ خطأ</button>
+      </div>
+      <div class="output" id="haptic-out">اضغط أي زر للاختبار…</div>
+    </div>
+  </div>
 
-<!-- Clipboard -->
-<p class="section-title">📋 الحافظة</p>
-<div class="grid">
-  <button class="btn accent" onclick="readClipboard()">
-    <span class="icon">📋</span> قراءة الحافظة
-  </button>
-  <button class="btn" onclick="AB.copyToClipboard(Date.now().toString()); AB.showToast('تم نسخ الوقت ⏱️')">
-    <span class="icon">⏱️</span> نسخ الوقت
-  </button>
-</div>
-<div class="output-box" id="clipboardOut">اضغط "قراءة الحافظة"...</div>
+  <!-- ── Device Info ── -->
+  <div class="section-label">معلومات الجهاز</div>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon" style="background:#1a1a0a">📱</div>
+      <div><div class="card-title">Device Info</div><div class="card-sub">بيانات الجهاز والنظام</div></div>
+    </div>
+    <div class="card-body">
+      <button class="btn btn-gold" onclick="loadDeviceInfo()">🔍 تحميل المعلومات</button>
+      <div class="info-grid" id="device-grid">
+        <div class="info-item"><div class="key">النظام</div><div class="val" id="d-os">—</div></div>
+        <div class="info-item"><div class="key">الإصدار</div><div class="val" id="d-ver">—</div></div>
+        <div class="info-item"><div class="key">الجهاز</div><div class="val" id="d-model">—</div></div>
+        <div class="info-item"><div class="key">المصنّع</div><div class="val" id="d-mfr">—</div></div>
+        <div class="info-item"><div class="key">UUID</div><div class="val" id="d-uuid" style="font-size:10px">—</div></div>
+        <div class="info-item"><div class="key">البيئة</div><div class="val" id="d-plat">—</div></div>
+      </div>
+    </div>
+  </div>
 
-<div class="divider"></div>
+  <!-- ── Network ── -->
+  <div class="section-label">حالة الشبكة</div>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon" style="background:#0a1a2a">📶</div>
+      <div><div class="card-title">Network Status</div><div class="card-sub">نوع الاتصال والحالة</div></div>
+    </div>
+    <div class="card-body">
+      <button class="btn btn-gold" onclick="checkNetwork()">🔄 فحص الشبكة</button>
+      <div class="output info" id="net-out">انقر لفحص الاتصال…</div>
+    </div>
+  </div>
 
-<!-- Calls & Apps -->
-<p class="section-title">📞 الاتصالات والتطبيقات</p>
-<label>رقم الهاتف:</label>
-<div class="row">
-  <input type="tel" id="phoneNum" placeholder="+966501234567">
-  <button class="btn green" onclick="AB.makeCall(document.getElementById('phoneNum').value)">
-    <span class="icon">📞</span>
-  </button>
-</div>
-<label>فتح واتساب (رقم + رسالة):</label>
-<div class="row">
-  <input type="tel" id="waPhone" placeholder="966501234567">
-  <input type="text" id="waMsg" placeholder="مرحباً!" style="margin-bottom:0">
-  <button class="btn green" onclick="AB.openWhatsApp(document.getElementById('waPhone').value, document.getElementById('waMsg').value)">
-    <span class="icon">💬</span>
-  </button>
-</div>
+  <!-- ── Filesystem ── -->
+  <div class="section-label">نظام الملفات</div>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon" style="background:#1a2a1a">📁</div>
+      <div><div class="card-title">Filesystem</div><div class="card-sub">كتابة وقراءة الملفات من التخزين</div></div>
+    </div>
+    <div class="card-body">
+      <input class="input" id="file-content" placeholder="محتوى الملف المراد حفظه" value="مذكرات مراجعة AQB — يوم رائع!" />
+      <div class="btn-row">
+        <button class="btn btn-green" onclick="writeFile()">💾 حفظ</button>
+        <button class="btn btn-ghost" onclick="readFile()">📂 قراءة</button>
+      </div>
+      <div class="output" id="fs-out">—</div>
+    </div>
+  </div>
 
-<div class="divider"></div>
+  <div style="height: 24px"></div>
+</div><!-- /scroll -->
 
-<!-- File & URL -->
-<p class="section-title">📁 الملفات والروابط</p>
-<div class="grid">
-  <button class="btn" onclick="AB.openFileManager()">
-    <span class="icon">📁</span> كل الملفات
-  </button>
-  <button class="btn" onclick="AB.openFileManager('image/*')">
-    <span class="icon">🖼️</span> اختر صورة
-  </button>
-  <button class="btn" onclick="AB.openFileManager('application/pdf')">
-    <span class="icon">📄</span> اختر PDF
-  </button>
-  <button class="btn" onclick="AB.openCamera()">
-    <span class="icon">📷</span> فتح الكاميرا
-  </button>
-</div>
-<label style="margin-top:10px">فتح رابط في المتصفح:</label>
-<div class="row">
-  <input type="url" id="urlInput" value="https://google.com">
-  <button class="btn accent" onclick="AB.openUrl(document.getElementById('urlInput').value)">
-    <span class="icon">🌐</span> فتح
-  </button>
-</div>
+<!-- Toast -->
+<div id="toast"></div>
 
-<div class="divider"></div>
-
-<!-- Email -->
-<p class="section-title">✉️ البريد الإلكتروني</p>
-<input type="email" id="emailTo" placeholder="البريد المستقبل: user@example.com">
-<input type="text" id="emailSubject" placeholder="الموضوع">
-<textarea id="emailBody" style="min-height:55px" placeholder="نص الرسالة..."></textarea>
-<button class="btn green cols-1" style="width:100%;padding:12px" onclick="doSendEmail()">
-  <span class="icon">✉️</span> إرسال بريد إلكتروني
-</button>
-
-<div class="divider"></div>
-
-<!-- Developer Console -->
-<p class="section-title">🛠️ وحدة المطوّر — تشغيل JS مباشرةً</p>
-<textarea id="jsCode" style="font-family:monospace;min-height:80px">AndroidBridge.showToast('تم تشغيل الكود بنجاح ✅');</textarea>
-<button class="btn accent" style="width:100%;padding:12px;margin-top:4px" onclick="runCode()">
-  <span class="icon">▶️</span> تشغيل الكود
-</button>
-<div class="output-box" id="jsOutput">النتيجة ستظهر هنا...</div>
-
-<div id="toast-container"></div>
-
-<!-- ════════════════════════════════════════════════════════════════ -->
-<!--                 تضمين مكتبة native-bridge.js                    -->
-<!-- قم بتغيير المسار ليتناسب مع موقعك:                              -->
-<!--   <script src="/native-bridge.js"></script>                     -->
-<!-- ════════════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
 <script>
-/* ═══════════════════════════════════════════════════════════════
-   INLINE COPY of native-bridge.js (للاستخدام بدون ملف خارجي)
-   يمكنك استبداله بـ: <script src="native-bridge.js"></script>
-   ═══════════════════════════════════════════════════════════════ */
-;(function (global) {
-  'use strict';
-  var NB  = global.NativeBridge  || null;
-  var AI  = global.AppInventor   || null;
-  var KOD = global.Kodular       || null;
-  var isAndroid = !!(NB || AI || KOD);
+/* ─── Capacitor bridge detection ─────────────────────────────────────── */
+const isNative = () =>
+  typeof window !== 'undefined' &&
+  typeof window.Capacitor !== 'undefined' &&
+  window.Capacitor.isNativePlatform?.();
 
-  function _webToast(msg) {
-    var d = document.createElement('div');
-    d.textContent = msg;
-    d.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.82);color:#fff;padding:9px 20px;border-radius:24px;z-index:2147483647;font-size:14px;max-width:80vw;text-align:center;opacity:0;transition:opacity .25s;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,.35)';
-    document.body.appendChild(d);
-    requestAnimationFrame(function(){
-      d.style.opacity='1';
-      setTimeout(function(){ d.style.opacity='0'; setTimeout(function(){ d.parentNode&&d.parentNode.removeChild(d); },300); },2200);
-    });
+const P = (name) => {
+  if (isNative() && window.Capacitor.Plugins?.[name]) {
+    return window.Capacitor.Plugins[name];
   }
+  return null;
+};
 
-  var Bridge = {
-    isAndroid: isAndroid, hasNativeBridge: !!NB,
-    getDeviceInfo: function(){ if(NB){try{return JSON.parse(NB.getDeviceInfo());}catch(e){}} return{manufacturer:'Web Browser',model:navigator.userAgent,brand:'N/A',version:0,release:'N/A',package:location.hostname}; },
-    showToast: function(msg){ if(NB){NB.showToast(String(msg));return;} _webToast(msg); },
-    showNotification: function(title,body,ch,id){ ch=ch||'default';id=id!==undefined?id:1; if(NB){NB.showNotification(ch,String(title),String(body),id);return;} if('Notification'in global)Notification.requestPermission().then(function(p){if(p==='granted')new Notification(title,{body:body});}); },
-    shareText: function(text,title){ title=title||'مشاركة'; if(NB){NB.shareText(String(title),String(text));return;} if(navigator.share){navigator.share({title:title,text:text}).catch(function(){});return;} _webToast('المشاركة غير مدعومة'); },
-    shareImage: function(imgPath,title){ title=title||'مشاركة صورة'; if(NB){NB.shareImage(String(title),String(imgPath));return;} _webToast('مشاركة الصور تعمل داخل التطبيق فقط'); },
-    copyToClipboard: function(text,label){ label=label||'نص'; if(NB)return NB.copyToClipboard(String(label),String(text)); if(navigator.clipboard){navigator.clipboard.writeText(text).catch(function(){});return true;} try{var ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;opacity:0;left:-9999px';document.body.appendChild(ta);ta.select();var ok=document.execCommand('copy');document.body.removeChild(ta);return ok;}catch(e){return false;} },
-    getClipboardText: function(){ if(NB)return NB.getClipboardText(); return ''; },
-    vibrate: function(ms){ ms=ms!==undefined?ms:200; if(NB){NB.vibrate(ms);return;} if(navigator.vibrate)navigator.vibrate(ms); },
-    isNetworkAvailable: function(){ if(NB)return NB.isNetworkAvailable(); return navigator.onLine; },
-    openUrl: function(url){ if(NB){NB.openUrl(String(url));return;} global.open(url,'_blank'); },
-    openFileManager: function(mt){ mt=mt||'*/*'; if(NB){NB.openFileManager(String(mt));return;} var i=document.createElement('input');i.type='file';if(mt!=='*/*')i.accept=mt;i.click(); },
-    openCamera: function(){ if(NB){NB.openCamera();return;} var i=document.createElement('input');i.type='file';i.accept='image/*';i.capture='environment';i.click(); },
-    sendEmail: function(to,sub,body){ if(NB){NB.sendEmail(String(to),String(sub),String(body));return;} global.open('mailto:'+to+'?subject='+encodeURIComponent(sub)+'&body='+encodeURIComponent(body)); },
-    makeCall: function(ph){ if(NB){NB.makeCall(String(ph));return;} global.open('tel:'+ph); },
-    openWhatsApp: function(ph,msg){ if(NB){NB.openWhatsApp(String(ph),String(msg||''));return;} global.open('https://wa.me/'+ph+'?text='+encodeURIComponent(msg||''),'_blank'); },
-    getWebViewString: function(){ if(AI)return AI.getWebViewString(); if(KOD)return KOD.getWebViewString(); return''; },
-    setWebViewString: function(v){ if(AI){AI.setWebViewString(String(v));return;} if(KOD)KOD.setWebViewString(String(v)); },
-    evaluateJS: function(s){ if(NB){NB.evaluateJS(String(s));return;} try{eval(s);}catch(e){console.error(e);} },
-    _callbacks:{}, _cbCounter:0,
-    registerCallback: function(fn){ var id='cb_'+(++this._cbCounter)+'_'+Date.now();this._callbacks[id]=fn;global._nbCallbacks=this._callbacks;return id; },
-    unregisterCallback: function(id){ delete this._callbacks[id]; }
-  };
-
-  global.AndroidBridge = Bridge;
-  global.AB = Bridge;
-  if(isAndroid) setTimeout(function(){ Bridge.vibrate(30); }, 600);
-  console.log('%c[AndroidBridge] %cجاهز | Android='+isAndroid+' | NativeBridge='+!!NB,'color:#6c63ff;font-weight:bold','color:inherit');
-})(typeof globalThis!=='undefined'?globalThis:window);
-</script>
-
-<script>
-/* ════ كود الصفحة التجريبية ════ */
-var AB = window.AndroidBridge;
-
-/* ── تحديث شريط الحالة ─────────────────────── */
-(function initStatus(){
-  var dot  = document.getElementById('statusDot');
-  var text = document.getElementById('statusText');
-  if (AB.hasNativeBridge) {
-    dot.className = 'dot green';
-    text.innerHTML = '✅ NativeBridge نشط — ميزات الهاتف الكاملة متاحة <span class="badge android">Android</span>';
-  } else if (AB.isAndroid) {
-    dot.className = 'dot orange';
-    text.innerHTML = '⚠️ AppInventor Bridge فقط — بعض الميزات محدودة <span class="badge android">Kodular</span>';
+/* ─── Init ───────────────────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', async () => {
+  const badge = document.getElementById('env-badge');
+  if (isNative()) {
+    badge.textContent = '📱 Native';
+    badge.classList.add('native');
   } else {
-    dot.className = 'dot red';
-    text.innerHTML = '🖥️ متصفح عادي — وضع التجريب على الويب <span class="badge web">Browser</span>';
+    badge.textContent = '🌐 Web';
   }
-})();
+  updateNetDot(navigator.onLine);
+  window.addEventListener('online',  () => updateNetDot(true));
+  window.addEventListener('offline', () => updateNetDot(false));
+});
 
-/* ── دوال الصفحة ────────────────────────────── */
-function showDeviceInfo() {
-  var info = AB.getDeviceInfo();
-  document.getElementById('deviceInfo').textContent =
-    JSON.stringify(info, null, 2);
+function updateNetDot(online) {
+  const dot = document.getElementById('net-dot');
+  dot.classList.toggle('online', online);
 }
 
-function checkNetwork() {
-  var ok = AB.isNetworkAvailable();
-  AB.showToast(ok ? '✅ الشبكة متصلة' : '❌ لا يوجد اتصال');
-  document.getElementById('deviceInfo').textContent =
-    'حالة الشبكة: ' + (ok ? 'متصل ✅' : 'غير متصل ❌');
+/* ─── Toast ──────────────────────────────────────────────────────────── */
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
 }
 
-function sendNotif() {
-  AB.showNotification(
-    '🔔 إشعار تجريبي',
-    'هذا إشعار من موقعك عبر NativeBridge',
-    'bridge_channel',
-    Math.floor(Math.random() * 1000)
-  );
-  AB.showToast('تم إرسال الإشعار!');
+function setOut(id, msg, type = '') {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = 'output' + (type ? ' ' + type : '');
 }
 
-function doShareText() {
-  var txt = document.getElementById('shareText').value.trim();
-  if (!txt) { AB.showToast('أدخل نصاً أولاً'); return; }
-  AB.shareText(txt, 'مشاركة من الموقع');
+/* ─── Share ──────────────────────────────────────────────────────────── */
+async function doShare() {
+  const title = document.getElementById('share-title').value;
+  const text  = document.getElementById('share-text').value;
+  const url   = document.getElementById('share-url').value;
+
+  const plugin = P('Share');
+  if (plugin) {
+    try {
+      await plugin.share({ title, text, url, dialogTitle: 'مشاركة عبر' });
+      setOut('share-out', '✅ تمت المشاركة بنجاح', 'ok');
+    } catch (e) {
+      setOut('share-out', e.message.includes('cancel') ? 'تم الإلغاء' : '❌ ' + e.message, 'err');
+    }
+  } else if (navigator.share) {
+    try {
+      await navigator.share({ title, text, url });
+      setOut('share-out', '✅ تمت المشاركة (Web Share API)', 'ok');
+    } catch (e) {
+      setOut('share-out', 'تم الإلغاء أو غير مدعوم', 'err');
+    }
+  } else {
+    navigator.clipboard?.writeText(url);
+    setOut('share-out', '⚠️ تم نسخ الرابط (Share غير مدعوم في المتصفح)', '');
+    toast('تم نسخ الرابط 📋');
+  }
 }
 
-function doCopyText() {
-  var txt = document.getElementById('shareText').value.trim();
-  if (!txt) { AB.showToast('أدخل نصاً أولاً'); return; }
-  var ok = AB.copyToClipboard(txt, 'نص مشترك');
-  AB.showToast(ok ? '✅ تم النسخ للحافظة!' : '❌ فشل النسخ');
-}
-
-function doShareImage() {
-  var p = document.getElementById('imagePath').value.trim();
-  if (!p) { AB.showToast('أدخل مسار الصورة'); return; }
-  AB.shareImage(p, 'صورة من التطبيق');
-}
-
-function readClipboard() {
-  var txt = AB.getClipboardText();
-  document.getElementById('clipboardOut').textContent =
-    txt || '(الحافظة فارغة أو غير مدعومة في المتصفح)';
-}
-
-function doSendEmail() {
-  var to  = document.getElementById('emailTo').value.trim();
-  var sub = document.getElementById('emailSubject').value.trim();
-  var bod = document.getElementById('emailBody').value.trim();
-  if (!to) { AB.showToast('أدخل البريد الإلكتروني'); return; }
-  AB.sendEmail(to, sub || 'رسالة من التطبيق', bod || '');
-}
-
-function runCode() {
-  var code = document.getElementById('jsCode').value;
-  var out  = document.getElementById('jsOutput');
+/* ─── Local Notifications ────────────────────────────────────────────── */
+async function checkNotifPerm() {
+  const plugin = P('LocalNotifications');
+  if (!plugin) {
+    setOut('notif-out', '⚠️ يعمل فقط داخل التطبيق', '');
+    return;
+  }
   try {
-    var result = eval(code);
-    out.textContent = result !== undefined ? String(result) : '✅ تم التنفيذ بنجاح (بدون قيمة مُرجعة)';
+    const res = await plugin.requestPermissions();
+    const ok  = res.display === 'granted';
+    setOut('notif-out', ok ? '✅ الإذن ممنوح' : '❌ الإذن مرفوض: ' + res.display, ok ? 'ok' : 'err');
   } catch (e) {
-    out.textContent = '❌ خطأ: ' + e.message;
+    setOut('notif-out', '❌ ' + e.message, 'err');
+  }
+}
+
+let notifId = 1;
+async function sendNotif(delaySec) {
+  const plugin = P('LocalNotifications');
+  if (!plugin) {
+    setOut('notif-out', '⚠️ يعمل فقط داخل التطبيق', '');
+    return;
+  }
+  const title = document.getElementById('notif-title').value || 'إشعار';
+  const body  = document.getElementById('notif-body').value  || '...';
+  const id    = notifId++;
+
+  try {
+    let opts = { notifications: [{ id, title, body, sound: 'default', smallIcon: 'ic_stat_icon_config_sample' }] };
+    if (delaySec > 0) {
+      const at = new Date(Date.now() + delaySec * 1000);
+      opts.notifications[0].schedule = { at };
+    }
+    await plugin.schedule(opts);
+    const msg = delaySec === 0 ? '✅ تم إرسال الإشعار فوراً' : `✅ الإشعار مجدول بعد ${delaySec} ثوانٍ`;
+    setOut('notif-out', msg, 'ok');
+    toast('🔔 ' + msg);
+  } catch (e) {
+    setOut('notif-out', '❌ ' + e.message + ' (تأكد من منح الإذن أولاً)', 'err');
+  }
+}
+
+/* ─── Camera ─────────────────────────────────────────────────────────── */
+async function openCamera()  { await captureImage('CAMERA'); }
+async function openGallery() { await captureImage('PHOTOS'); }
+
+async function captureImage(source) {
+  const plugin = P('Camera');
+  const preview = document.getElementById('img-preview');
+  if (!plugin) {
+    setOut('cam-out', '⚠️ يعمل فقط داخل التطبيق', '');
+    return;
+  }
+  try {
+    const img = await plugin.getPhoto({
+      quality: 85,
+      allowEditing: false,
+      resultType: 'base64',
+      source,
+      correctOrientation: true
+    });
+    const src = 'data:image/jpeg;base64,' + img.base64String;
+    preview.src = src;
+    preview.style.display = 'block';
+    setOut('cam-out', `✅ ${source === 'CAMERA' ? 'تم التقاط' : 'تم اختيار'} الصورة — ${img.format.toUpperCase()}`, 'ok');
+  } catch (e) {
+    if (!e.message.includes('cancel')) setOut('cam-out', '❌ ' + e.message, 'err');
+    else setOut('cam-out', 'تم الإلغاء', '');
+  }
+}
+
+/* ─── Clipboard ──────────────────────────────────────────────────────── */
+async function doCopy() {
+  const text   = document.getElementById('clip-text').value;
+  const plugin = P('Clipboard');
+  if (plugin) {
+    try {
+      await plugin.write({ string: text });
+      setOut('clip-out', '✅ تم النسخ: ' + text, 'ok');
+      toast('تم النسخ 📋');
+    } catch (e) { setOut('clip-out', '❌ ' + e.message, 'err'); }
+  } else {
+    try {
+      await navigator.clipboard.writeText(text);
+      setOut('clip-out', '✅ تم النسخ (Web): ' + text, 'ok');
+    } catch { setOut('clip-out', '❌ فشل النسخ', 'err'); }
+  }
+}
+
+async function doPaste() {
+  const plugin = P('Clipboard');
+  if (plugin) {
+    try {
+      const res = await plugin.read();
+      setOut('clip-out', '📄 المحتوى: ' + (res.value || '(فارغ)'), 'info');
+    } catch (e) { setOut('clip-out', '❌ ' + e.message, 'err'); }
+  } else {
+    try {
+      const text = await navigator.clipboard.readText();
+      setOut('clip-out', '📄 المحتوى: ' + (text || '(فارغ)'), 'info');
+    } catch { setOut('clip-out', '⚠️ اللصق يحتاج إذن المتصفح', ''); }
+  }
+}
+
+/* ─── Haptics ────────────────────────────────────────────────────────── */
+async function haptic(type) {
+  const plugin = P('Haptics');
+  const types  = ['SUCCESS','WARNING','ERROR'];
+  if (plugin) {
+    try {
+      if (types.includes(type)) {
+        await plugin.notification({ type });
+      } else {
+        await plugin.impact({ style: type });
+      }
+      setOut('haptic-out', '📳 اهتزاز: ' + type, 'ok');
+    } catch (e) { setOut('haptic-out', '❌ ' + e.message, 'err'); }
+  } else {
+    navigator.vibrate?.([50, 30, 80]);
+    setOut('haptic-out', '📳 اهتزاز (Web Vibration API): ' + type, '');
+  }
+}
+
+/* ─── Device Info ────────────────────────────────────────────────────── */
+async function loadDeviceInfo() {
+  const plugin = P('Device');
+  const set = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val || '—'; };
+
+  if (plugin) {
+    try {
+      const [info, id] = await Promise.all([plugin.getInfo(), plugin.getId()]);
+      set('d-os',    info.operatingSystem + ' ' + info.osVersion);
+      set('d-ver',   info.androidSDKVersion || info.iOSVersion || '—');
+      set('d-model', info.model);
+      set('d-mfr',   info.manufacturer);
+      set('d-uuid',  id.identifier?.slice(0, 16) + '…');
+      set('d-plat',  info.platform + (info.isVirtual ? ' (Emulator)' : ' (Real)'));
+    } catch (e) { toast('❌ ' + e.message); }
+  } else {
+    set('d-os',    navigator.userAgentData?.platform || navigator.platform);
+    set('d-ver',   navigator.appVersion?.slice(0, 20));
+    set('d-model', 'Web Browser');
+    set('d-mfr',   navigator.vendor || '—');
+    set('d-uuid',  '—');
+    set('d-plat',  'web');
+  }
+}
+
+/* ─── Network ────────────────────────────────────────────────────────── */
+async function checkNetwork() {
+  const plugin = P('Network');
+  if (plugin) {
+    try {
+      const s = await plugin.getStatus();
+      const icon = s.connected ? '✅' : '❌';
+      const typeMap = { wifi: 'Wi-Fi 📶', cellular: 'بيانات جوال 📡', none: 'لا يوجد اتصال ❌', unknown: 'غير معروف' };
+      setOut('net-out', `${icon} متصل: ${s.connected ? 'نعم' : 'لا'}\nالنوع: ${typeMap[s.connectionType] || s.connectionType}`, s.connected ? 'ok' : 'err');
+      updateNetDot(s.connected);
+    } catch (e) { setOut('net-out', '❌ ' + e.message, 'err'); }
+  } else {
+    const online = navigator.onLine;
+    setOut('net-out', online ? '✅ متصل بالإنترنت (Web)' : '❌ لا يوجد اتصال (Web)', online ? 'ok' : 'err');
+    updateNetDot(online);
+  }
+}
+
+/* ─── Filesystem ─────────────────────────────────────────────────────── */
+const FS_NAME = 'aqb-notes.txt';
+
+async function writeFile() {
+  const plugin = P('Filesystem');
+  const data   = document.getElementById('file-content').value;
+  if (!plugin) {
+    localStorage.setItem(FS_NAME, data);
+    setOut('fs-out', '✅ تم الحفظ في localStorage (Web): ' + FS_NAME, 'ok');
+    return;
+  }
+  try {
+    await plugin.writeFile({ path: FS_NAME, data, directory: 'DOCUMENTS', encoding: 'utf8' });
+    setOut('fs-out', '✅ تم الحفظ في Documents/' + FS_NAME, 'ok');
+    toast('تم الحفظ 💾');
+  } catch (e) { setOut('fs-out', '❌ ' + e.message, 'err'); }
+}
+
+async function readFile() {
+  const plugin = P('Filesystem');
+  if (!plugin) {
+    const data = localStorage.getItem(FS_NAME);
+    setOut('fs-out', data ? '📂 المحتوى:\n' + data : '⚠️ الملف غير موجود', data ? 'info' : '');
+    return;
+  }
+  try {
+    const res = await plugin.readFile({ path: FS_NAME, directory: 'DOCUMENTS', encoding: 'utf8' });
+    setOut('fs-out', '📂 المحتوى:\n' + res.data, 'info');
+  } catch (e) {
+    setOut('fs-out', e.message.includes('exist') ? '⚠️ الملف غير موجود — احفظ أولاً' : '❌ ' + e.message, 'err');
   }
 }
 </script>
