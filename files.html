@@ -111,10 +111,11 @@
 
     .pdf-pages-container {
       padding: 12px;
-      display: flex; flex-direction: column; gap: 10px;
-      max-height: 560px; overflow-y: auto;
+      display: flex; flex-direction: column; gap: 12px;
+      height: 80vh; overflow-y: scroll;
       background: #111827;
       scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
     }
 
     .pdf-page-wrap {
@@ -122,6 +123,7 @@
       border-radius: 6px; overflow: hidden;
       box-shadow: 0 2px 16px rgba(0,0,0,.6);
       animation: pageFadeIn .3s ease both;
+      flex-shrink: 0;
     }
     @keyframes pageFadeIn {
       from { opacity: 0; transform: translateY(10px); }
