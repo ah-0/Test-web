@@ -148,19 +148,41 @@
     }
     .file-card.has-viewer .pdf-viewer-wrap { display: block; }
 
-    .pdf-toolbar {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 10px 16px; background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      gap: 8px;
+    /* ── Saved Badge ─────────────────────────────────── */
+    .saved-badge {
+      display: none; align-items: center; gap: 4px;
+      background: rgba(34,197,94,.14); border: 1px solid rgba(34,197,94,.4);
+      color: #4ade80; font-size: 11px; font-weight: 700;
+      padding: 3px 8px; border-radius: 20px; white-space: nowrap;
+      flex-shrink: 0;
     }
-    .pdf-toolbar-title { font-size: 12px; color: var(--muted); font-weight: 600; }
-    .pdf-pages-info    { font-size: 12px; color: var(--blue-l); font-weight: 700; white-space: nowrap; }
+    .file-card.is-saved .saved-badge { display: flex; }
 
-    .pdf-close-btn {
-      background: none; border: none; color: var(--muted);
-      font-size: 18px; cursor: pointer; padding: 0 2px;
-      line-height: 1; flex-shrink: 0;
+    /* ── PDF Toolbar ─────────────────────────────────── */
+    .pdf-toolbar {
+      display: flex; align-items: center;
+      padding: 8px 12px; background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      gap: 6px; flex-wrap: nowrap;
+    }
+    .pdf-toolbar-title { font-size: 11px; color: var(--muted); font-weight: 600; flex-shrink: 0; }
+    .pdf-pages-info    { font-size: 11px; color: var(--blue-l); font-weight: 700; white-space: nowrap; flex: 1; text-align: center; }
+
+    .pdf-tool-btn {
+      background: var(--card); border: 1px solid var(--border);
+      color: var(--text); border-radius: 7px;
+      font-size: 15px; width: 30px; height: 30px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; flex-shrink: 0; transition: background .15s;
+      padding: 0;
+    }
+    .pdf-tool-btn:hover   { background: var(--surface2, #1e2d45); }
+    .pdf-tool-btn:active  { transform: scale(.9); }
+    .pdf-tool-btn.pdf-close-btn { color: var(--muted); }
+
+    .pdf-zoom-level {
+      font-size: 11px; color: var(--blue-l); font-weight: 700;
+      min-width: 36px; text-align: center; flex-shrink: 0;
     }
 
     .pdf-pages-container {
@@ -189,6 +211,33 @@
       position: absolute; bottom: 8px; left: 8px;
       background: rgba(0,0,0,.6); color: #fff;
       font-size: 10px; padding: 2px 8px; border-radius: 20px;
+    }
+
+    /* ── Fullscreen Overlay ───────────────────────────── */
+    #pdf-fullscreen-overlay {
+      display: none;
+      position: fixed; inset: 0; z-index: 9999;
+      background: #0a0f1a;
+      flex-direction: column;
+    }
+    #pdf-fullscreen-overlay.active { display: flex; }
+
+    #pdf-fs-toolbar {
+      display: flex; align-items: center;
+      padding: 10px 14px; background: #0d1526;
+      border-bottom: 1px solid var(--border);
+      gap: 8px; flex-shrink: 0;
+    }
+    #pdf-fs-title    { font-size: 13px; color: var(--text); font-weight: 700; flex: 1; text-align: center; }
+    #pdf-fs-pages    { font-size: 12px; color: var(--blue-l); font-weight: 700; white-space: nowrap; }
+    #pdf-fs-zoom     { font-size: 12px; color: var(--blue-l); font-weight: 700; min-width: 40px; text-align: center; }
+
+    #pdf-fs-pages-container {
+      flex: 1; overflow-y: scroll;
+      padding: 14px;
+      display: flex; flex-direction: column; gap: 14px;
+      background: #111827;
+      -webkit-overflow-scrolling: touch;
     }
 
     .pdf-msg {
@@ -238,6 +287,19 @@
 </div>
 
 <nav class="bottom-nav" id="bottom-nav"></nav>
+
+<!-- ═══ Fullscreen PDF Overlay ═══════════════════════════════════ -->
+<div id="pdf-fullscreen-overlay">
+  <div id="pdf-fs-toolbar">
+    <button class="pdf-tool-btn" onclick="fszoomOut()" title="تصغير">−</button>
+    <span id="pdf-fs-zoom">100%</span>
+    <button class="pdf-tool-btn" onclick="fszoomIn()" title="تكبير">+</button>
+    <span id="pdf-fs-title">PDF</span>
+    <span id="pdf-fs-pages"></span>
+    <button class="pdf-tool-btn" onclick="closeFullscreen()" title="إغلاق ملء الشاشة" style="font-size:18px;color:var(--muted);">✕</button>
+  </div>
+  <div id="pdf-fs-pages-container"></div>
+</div>
 
 <script src="js/app.js"></script>
 <script>
@@ -391,6 +453,7 @@ function buildFileCard(f) {
         <div class="file-name">${f.name}</div>
         <div class="file-subject">${f.subject}</div>
       </div>
+      <span class="saved-badge" id="saved-badge-${f.id}">💾 محفوظ</span>
       <button class="btn-dl" id="btn-${f.id}" onclick="startDownload('${f.id}')">
         ⬇ تحميل
       </button>
@@ -423,9 +486,13 @@ function buildFileCard(f) {
 
     <div class="pdf-viewer-wrap" id="viewer-wrap-${f.id}">
       <div class="pdf-toolbar">
-        <span class="pdf-toolbar-title">📄 عارض PDF</span>
+        <span class="pdf-toolbar-title">📄 PDF</span>
         <span class="pdf-pages-info" id="pages-info-${f.id}"></span>
-        <button class="pdf-close-btn" onclick="closeViewer('${f.id}')" title="إغلاق">✕</button>
+        <button class="pdf-tool-btn" onclick="zoomOut('${f.id}')" title="تصغير">−</button>
+        <span class="pdf-zoom-level" id="zoom-lbl-${f.id}">100%</span>
+        <button class="pdf-tool-btn" onclick="zoomIn('${f.id}')"  title="تكبير">+</button>
+        <button class="pdf-tool-btn" onclick="openFullscreen('${f.id}')" title="ملء الشاشة">⛶</button>
+        <button class="pdf-tool-btn pdf-close-btn" onclick="closeViewer('${f.id}')" title="إغلاق">✕</button>
       </div>
       <div class="pdf-pages-container" id="pages-${f.id}">
         <div class="pdf-msg">
@@ -526,16 +593,27 @@ function clearError(fileId) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   رسم صفحة واحدة في العارض
+   حالة العارض لكل ملف — zoom + pdfDoc + buffer
    ═══════════════════════════════════════════════════════════════════ */
-async function renderPage(pdfDoc, pageNum, container, fileId, total) {
+const viewerState = {};  /* fileId → { pdfDoc, zoom, buffer } */
+const BASE_SCALE  = window.devicePixelRatio > 1 ? 1.6 : 1.3;
+const ZOOM_MIN    = 0.5;
+const ZOOM_MAX    = 3.0;
+const ZOOM_STEP   = 0.25;
+
+/* fullscreen يشير إلى fileId الذي يعمل في وضع ملء الشاشة حالياً */
+let fsActiveFileId = null;
+
+/* ═══════════════════════════════════════════════════════════════════
+   رسم صفحة واحدة في عارض محدد
+   ═══════════════════════════════════════════════════════════════════ */
+async function renderPage(pdfDoc, pageNum, container, infoEl, total, zoom = 1) {
   const page     = await pdfDoc.getPage(pageNum);
-  const scale    = window.devicePixelRatio > 1 ? 1.6 : 1.3;
-  const viewport = page.getViewport({ scale });
+  const viewport = page.getViewport({ scale: BASE_SCALE * zoom });
 
   const wrap    = document.createElement('div');
   wrap.className = 'pdf-page-wrap';
-  wrap.style.animationDelay = (pageNum * 0.04) + 's';
+  wrap.style.animationDelay = (pageNum * 0.03) + 's';
 
   const badge = document.createElement('div');
   badge.className   = 'pdf-page-badge';
@@ -551,12 +629,28 @@ async function renderPage(pdfDoc, pageNum, container, fileId, total) {
 
   await page.render({ canvasContext: ctx, viewport }).promise;
 
-  const info = document.getElementById('pages-info-' + fileId);
-  if (info) info.textContent = `${pageNum} / ${total} صفحة`;
+  if (infoEl) infoEl.textContent = `${pageNum} / ${total} صفحة`;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   عرض PDF تدريجياً صفحة بصفحة باستخدام PDF.js
+   رسم كل الصفحات في حاوية معيّنة (بعد مسحها)
+   ═══════════════════════════════════════════════════════════════════ */
+async function renderAllPages(fileId, container, infoEl, zoom = 1) {
+  const vs = viewerState[fileId];
+  if (!vs || !vs.pdfDoc) return;
+
+  container.innerHTML = '';
+  const total = vs.pdfDoc.numPages;
+  if (infoEl) infoEl.textContent = `0 / ${total} صفحة`;
+
+  for (let i = 1; i <= total; i++) {
+    await renderPage(vs.pdfDoc, i, container, infoEl, total, zoom);
+    await new Promise(r => setTimeout(r, 30));
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   عرض PDF تدريجياً — يحفظ الحالة في viewerState
    ═══════════════════════════════════════════════════════════════════ */
 async function renderPDFProgressive(fileId, buffer) {
   const card      = document.getElementById('card-' + fileId);
@@ -579,15 +673,118 @@ async function renderPDFProgressive(fileId, buffer) {
     return;
   }
 
-  const total = pdfDoc.numPages;
-  const info  = document.getElementById('pages-info-' + fileId);
-  if (info) info.textContent = `0 / ${total} صفحة`;
+  /* احفظ الحالة */
+  viewerState[fileId] = { pdfDoc, buffer, zoom: 1 };
+  updateZoomLabel(fileId, 1);
 
-  for (let i = 1; i <= total; i++) {
-    await renderPage(pdfDoc, i, container, fileId, total);
-    /* تأخير صغير بين الصفحات يتيح رؤية التحميل التدريجي */
-    await new Promise(r => setTimeout(r, 40));
-  }
+  const infoEl = document.getElementById('pages-info-' + fileId);
+  if (infoEl) infoEl.textContent = `0 / ${pdfDoc.numPages} صفحة`;
+
+  await renderAllPages(fileId, container, infoEl, 1);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   تحديث ملصق مستوى الزوم
+   ═══════════════════════════════════════════════════════════════════ */
+function updateZoomLabel(fileId, zoom) {
+  const lbl = document.getElementById('zoom-lbl-' + fileId);
+  if (lbl) lbl.textContent = Math.round(zoom * 100) + '%';
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   التكبير والتصغير في العارض المدمج
+   ═══════════════════════════════════════════════════════════════════ */
+async function zoomIn(fileId) {
+  const vs = viewerState[fileId];
+  if (!vs) return;
+  vs.zoom = Math.min(ZOOM_MAX, +(vs.zoom + ZOOM_STEP).toFixed(2));
+  updateZoomLabel(fileId, vs.zoom);
+  await rerenderViewer(fileId);
+}
+
+async function zoomOut(fileId) {
+  const vs = viewerState[fileId];
+  if (!vs) return;
+  vs.zoom = Math.max(ZOOM_MIN, +(vs.zoom - ZOOM_STEP).toFixed(2));
+  updateZoomLabel(fileId, vs.zoom);
+  await rerenderViewer(fileId);
+}
+
+async function rerenderViewer(fileId) {
+  const container = document.getElementById('pages-' + fileId);
+  const infoEl    = document.getElementById('pages-info-' + fileId);
+  if (!container) return;
+  await renderAllPages(fileId, container, infoEl, viewerState[fileId].zoom);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   وضع ملء الشاشة
+   ═══════════════════════════════════════════════════════════════════ */
+async function openFullscreen(fileId) {
+  const vs = viewerState[fileId];
+  if (!vs) return;
+
+  fsActiveFileId = fileId;
+  const f = PDF_FILES.find(x => x.id === fileId);
+
+  const overlay    = document.getElementById('pdf-fullscreen-overlay');
+  const fsTitle    = document.getElementById('pdf-fs-title');
+  const fsPages    = document.getElementById('pdf-fs-pages');
+  const fsZoom     = document.getElementById('pdf-fs-zoom');
+  const fsCont     = document.getElementById('pdf-fs-pages-container');
+
+  if (fsTitle) fsTitle.textContent = f ? f.name : 'PDF';
+  if (fsZoom)  fsZoom.textContent  = Math.round(vs.zoom * 100) + '%';
+  fsCont.innerHTML = '';
+  overlay.classList.add('active');
+
+  /* منع التمرير خلف الـ overlay */
+  document.body.style.overflow = 'hidden';
+
+  await renderAllPages(fileId, fsCont, fsPages, vs.zoom);
+
+  /* دعم مفتاح Escape */
+  document.addEventListener('keydown', _fsKeyHandler);
+}
+
+function closeFullscreen() {
+  const overlay = document.getElementById('pdf-fullscreen-overlay');
+  overlay.classList.remove('active');
+  document.body.style.overflow = '';
+  document.removeEventListener('keydown', _fsKeyHandler);
+
+  const fsCont = document.getElementById('pdf-fs-pages-container');
+  fsCont.innerHTML = '';
+  fsActiveFileId = null;
+}
+
+function _fsKeyHandler(e) {
+  if (e.key === 'Escape') closeFullscreen();
+}
+
+/* أزرار الزوم داخل وضع ملء الشاشة */
+async function fszoomIn() {
+  if (!fsActiveFileId) return;
+  const vs = viewerState[fsActiveFileId];
+  if (!vs) return;
+  vs.zoom = Math.min(ZOOM_MAX, +(vs.zoom + ZOOM_STEP).toFixed(2));
+  updateZoomLabel(fsActiveFileId, vs.zoom);
+  document.getElementById('pdf-fs-zoom').textContent = Math.round(vs.zoom * 100) + '%';
+  const fsCont  = document.getElementById('pdf-fs-pages-container');
+  const fsPages = document.getElementById('pdf-fs-pages');
+  await renderAllPages(fsActiveFileId, fsCont, fsPages, vs.zoom);
+}
+
+async function fszoomOut() {
+  if (!fsActiveFileId) return;
+  const vs = viewerState[fsActiveFileId];
+  if (!vs) return;
+  vs.zoom = Math.max(ZOOM_MIN, +(vs.zoom - ZOOM_STEP).toFixed(2));
+  updateZoomLabel(fsActiveFileId, vs.zoom);
+  document.getElementById('pdf-fs-zoom').textContent = Math.round(vs.zoom * 100) + '%';
+  const fsCont  = document.getElementById('pdf-fs-pages-container');
+  const fsPages = document.getElementById('pdf-fs-pages');
+  await renderAllPages(fsActiveFileId, fsCont, fsPages, vs.zoom);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -679,6 +876,7 @@ async function capHttpDownload(fileId, url) {
    ═══════════════════════════════════════════════════════════════════ */
 async function openExistingPDF(fileId) {
   const card = document.getElementById('card-' + fileId);
+  /* إذا كان مفتوحاً: أغلقه */
   if (card.classList.contains('has-viewer')) {
     closeViewer(fileId);
     return;
@@ -688,7 +886,7 @@ async function openExistingPDF(fileId) {
   container.innerHTML = `
     <div class="pdf-msg">
       <span class="pdf-msg-icon">📂</span>
-      <span>جارٍ تحميل الملف…</span>
+      <span>جارٍ تحميل الملف من الذاكرة…</span>
     </div>`;
   card.classList.add('has-viewer');
 
@@ -709,6 +907,7 @@ function closeViewer(fileId) {
   const container = document.getElementById('pages-' + fileId);
   card.classList.remove('has-viewer');
   container.innerHTML = '';
+  /* أبقِ viewerState محفوظاً لإعادة الفتح السريع */
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -778,6 +977,9 @@ async function startDownload(fileId) {
   setProgress(fileId, 100, '✅ اكتمل التحميل', 'normal', 'محفوظ — جارٍ فتح العارض…');
   setCardState(fileId, 'done', '✅ محفوظ — اضغط لفتح');
   fileState[fileId] = 'done';
+  /* أظهر شارة "محفوظ" الخضراء */
+  const savedCard = document.getElementById('card-' + fileId);
+  if (savedCard) savedCard.classList.add('is-saved');
   Haptics.success();
   showToast('✅ تم تحميل الملف وحفظه بنجاح');
 
@@ -805,8 +1007,11 @@ async function init() {
 
     if (exists) {
       fileState[f.id] = 'done';
-      setProgress(f.id, 100, '✅ محفوظ محلياً');
+      setProgress(f.id, 100, '✅ محفوظ محلياً', 'normal', 'اضغط لفتح العارض');
       setCardState(f.id, 'done', '✅ محفوظ — اضغط لفتح');
+      /* أظهر شارة "محفوظ" الخضراء */
+      const card = document.getElementById('card-' + f.id);
+      if (card) card.classList.add('is-saved');
     }
   }
 }
