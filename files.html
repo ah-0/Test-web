@@ -55,36 +55,90 @@
     .file-card.done  .file-progress,
     .file-card.error .file-progress { display: block; }
 
-    .progress-row {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 8px;
+    /* حاوية الصف الرئيسي */
+    .progress-main {
+      display: flex; align-items: center; gap: 12px; margin-bottom: 10px;
     }
-    .progress-status { font-size: 12px; color: var(--muted); }
-    .progress-pct    { font-size: 13px; font-weight: 700; color: var(--blue-l); }
-    .file-card.done  .progress-pct { color: var(--green); }
-    .file-card.error .progress-pct { color: var(--red); }
 
+    /* ── المؤشر الدائري ── */
+    .progress-ring-wrap {
+      position: relative; width: 42px; height: 42px; flex-shrink: 0;
+    }
+    .progress-ring-svg { transform: rotate(-90deg); }
+    .progress-ring-bg {
+      fill: none; stroke: var(--surface); stroke-width: 4;
+    }
+    .progress-ring-fill {
+      fill: none; stroke: var(--blue); stroke-width: 4;
+      stroke-linecap: round;
+      stroke-dasharray: 107;
+      stroke-dashoffset: 107;
+      transition: stroke-dashoffset .35s ease, stroke .2s;
+    }
+    .file-card.done  .progress-ring-fill { stroke: var(--green); }
+    .file-card.error .progress-ring-fill { stroke: var(--red); }
+
+    .progress-ring-icon {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 800; color: var(--blue-l);
+      transition: color .2s;
+    }
+    .file-card.done  .progress-ring-icon { color: var(--green); }
+    .file-card.error .progress-ring-icon { color: var(--red); }
+
+    /* spin على الدائرة عند الاتصال / الحفظ */
+    @keyframes ringSpinBg {
+      to { stroke-dashoffset: 0; }
+    }
+    @keyframes ringRotate {
+      to { transform: rotate(270deg); }
+    }
+    .progress-ring-fill.spinning {
+      stroke-dashoffset: 27 !important;
+      animation: ringRotate 1s linear infinite;
+      transform-origin: 21px 21px;
+      transform-box: fill-box;
+    }
+
+    /* ── نصوص الحالة ── */
+    .progress-texts { flex: 1; min-width: 0; }
+    .progress-status {
+      font-size: 13px; font-weight: 600; color: var(--text);
+      margin-bottom: 3px;
+    }
+    .progress-detail {
+      font-size: 11px; color: var(--muted);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    /* ── شريط التقدم ── */
     .progress-track {
-      width: 100%; height: 8px;
+      width: 100%; height: 5px;
       background: var(--surface); border-radius: 100px; overflow: hidden;
     }
     .progress-fill {
       height: 100%; width: 0%;
       background: linear-gradient(90deg, var(--blue2), var(--blue-l));
       border-radius: 100px;
-      transition: width .25s ease;
+      transition: width .3s ease;
     }
     .file-card.done  .progress-fill { background: var(--green); }
     .file-card.error .progress-fill { background: var(--red); }
 
-    /* Indeterminate shimmer for unknown size */
-    @keyframes shimmer {
-      0%   { transform: translateX(100%); }
-      100% { transform: translateX(-200%); }
+    /* موجة متحركة عند التحميل بحجم غير معروف */
+    @keyframes waveFlow {
+      0%   { background-position: 200% center; }
+      100% { background-position: -200% center; }
     }
-    .progress-fill.indeterminate {
-      width: 40% !important;
-      animation: shimmer 1.4s infinite linear;
+    .progress-fill.wave {
+      width: 100% !important;
+      background: linear-gradient(90deg,
+        var(--surface) 0%, var(--blue-d) 30%,
+        var(--blue) 50%, var(--blue-d) 70%,
+        var(--surface) 100%);
+      background-size: 200% 100%;
+      animation: waveFlow 1.6s ease-in-out infinite;
     }
 
     /* ── PDF Viewer ──────────────────────────────────── */
@@ -343,9 +397,18 @@ function buildFileCard(f) {
     </div>
 
     <div class="file-progress" id="prog-${f.id}">
-      <div class="progress-row">
-        <span class="progress-status" id="status-${f.id}">جارٍ التحميل…</span>
-        <span class="progress-pct"    id="pct-${f.id}">0%</span>
+      <div class="progress-main">
+        <div class="progress-ring-wrap">
+          <svg class="progress-ring-svg" width="42" height="42" viewBox="0 0 42 42">
+            <circle class="progress-ring-bg"   cx="21" cy="21" r="17"/>
+            <circle class="progress-ring-fill" cx="21" cy="21" r="17" id="ring-${f.id}"/>
+          </svg>
+          <div class="progress-ring-icon" id="ring-icon-${f.id}">0%</div>
+        </div>
+        <div class="progress-texts">
+          <div class="progress-status" id="status-${f.id}">جارٍ الاتصال…</div>
+          <div class="progress-detail" id="detail-${f.id}"></div>
+        </div>
       </div>
       <div class="progress-track">
         <div class="progress-fill" id="fill-${f.id}"></div>
@@ -375,23 +438,44 @@ function buildFileCard(f) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   تحديث واجهة التقدم
+   تحديث واجهة التقدم — رينج + شريط + نصوص
+   circumference = 2π × 17 ≈ 107
    ═══════════════════════════════════════════════════════════════════ */
-function setProgress(fileId, pct, statusText, indeterminate = false) {
-  const fill   = document.getElementById('fill-'   + fileId);
-  const pctEl  = document.getElementById('pct-'    + fileId);
-  const statEl = document.getElementById('status-' + fileId);
+const RING_C = 107;
+
+function setProgress(fileId, pct, statusText, mode = 'normal', detailText = '') {
+  const ring    = document.getElementById('ring-'        + fileId);
+  const icon    = document.getElementById('ring-icon-'   + fileId);
+  const fill    = document.getElementById('fill-'        + fileId);
+  const statEl  = document.getElementById('status-'      + fileId);
+  const detEl   = document.getElementById('detail-'      + fileId);
   if (!fill) return;
 
-  if (indeterminate) {
-    fill.classList.add('indeterminate');
-    pctEl.textContent = '…';
+  /* ── mode: 'normal' | 'spin' | 'wave' | 'done' | 'error' ── */
+  const p = Math.min(100, Math.max(0, pct));
+
+  if (mode === 'spin') {
+    /* اتصال / حفظ — دوران كامل */
+    ring.classList.add('spinning');
+    fill.classList.remove('wave');
+    fill.style.width = '0%';
+    if (icon) icon.textContent = '↻';
+  } else if (mode === 'wave') {
+    /* تحميل بحجم غير معروف — موجة */
+    ring.classList.add('spinning');
+    fill.classList.add('wave');
+    if (icon) icon.textContent = '⬇';
   } else {
-    fill.classList.remove('indeterminate');
-    fill.style.width  = Math.min(100, pct) + '%';
-    pctEl.textContent = Math.round(Math.min(100, pct)) + '%';
+    /* تقدم حقيقي أو نهاية */
+    ring.classList.remove('spinning');
+    fill.classList.remove('wave');
+    ring.style.strokeDashoffset = RING_C * (1 - p / 100);
+    fill.style.width = p + '%';
+    if (icon) icon.textContent = p >= 100 ? '✓' : Math.round(p) + '%';
   }
+
   if (statusText && statEl) statEl.textContent = statusText;
+  if (detEl) detEl.textContent = detailText;
 }
 
 function setCardState(fileId, state, statusText) {
@@ -528,15 +612,19 @@ function formatBytes(b) {
 
 /* ── الطبقة 1: fetch() مع ستريم — يعمل في native بفضل CapacitorHttp ── */
 async function fetchStreamWithProgress(fileId, url) {
+  setProgress(fileId, 0, 'جارٍ الاتصال…', 'spin');
+
   const response = await fetch(url, { redirect: 'follow' });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
   const contentLength = response.headers.get('Content-Length');
   const total = contentLength ? parseInt(contentLength, 10) : 0;
 
-  const reader = response.body.getReader();
-  const chunks = [];
+  const reader  = response.body.getReader();
+  const chunks  = [];
   let received  = 0;
+  let lastTime  = Date.now();
+  let lastBytes = 0;
 
   while (true) {
     const { done, value } = await reader.read();
@@ -544,13 +632,23 @@ async function fetchStreamWithProgress(fileId, url) {
     chunks.push(value);
     received += value.length;
 
+    /* احسب السرعة كل 300ms */
+    const now = Date.now();
+    let speedText = '';
+    if (now - lastTime >= 300) {
+      const speed = (received - lastBytes) / ((now - lastTime) / 1000);
+      speedText = formatBytes(speed) + '/ث';
+      lastTime  = now;
+      lastBytes = received;
+    }
+
     if (total > 0) {
-      setProgress(fileId,
-        (received / total) * 100,
-        `جارٍ التحميل… ${formatBytes(received)} / ${formatBytes(total)}`);
+      const pct = (received / total) * 100;
+      setProgress(fileId, pct, 'جارٍ التحميل', 'normal',
+        `${formatBytes(received)} / ${formatBytes(total)}${speedText ? ' · ' + speedText : ''}`);
     } else {
-      setProgress(fileId, 0,
-        `جارٍ التحميل… ${formatBytes(received)}`, true);
+      setProgress(fileId, 0, 'جارٍ التحميل', 'wave',
+        `${formatBytes(received)} مُحمَّل${speedText ? ' · ' + speedText : ''}`);
     }
   }
 
@@ -565,30 +663,15 @@ async function capHttpDownload(fileId, url) {
   const http = CAP('CapacitorHttp');
   if (!http) throw new Error('CapacitorHttp غير متاح');
 
-  /* شريط تقدم تقريبي لأن CapacitorHttp لا يدعم streaming events */
-  let fake = 0;
-  const fakeTimer = setInterval(() => {
-    fake = Math.min(90, fake + Math.random() * 8);
-    setProgress(fileId, fake, `جارٍ التحميل عبر النظام…`);
-  }, 400);
+  /* CapacitorHttp لا يدعم streaming → موجة حتى يكتمل */
+  setProgress(fileId, 0, 'جارٍ التحميل عبر النظام', 'wave',
+    'يُستخدم HTTP الأصيل (بدون CORS)');
 
-  let data;
-  try {
-    const resp = await http.request({
-      method:       'GET',
-      url,
-      responseType: 'arraybuffer',
-    });
-    if (resp.status < 200 || resp.status >= 300)
-      throw new Error(`HTTP ${resp.status}`);
-    /* CapacitorHttp يُعيد البيانات الثنائية كـ base64 */
-    data = fromBase64(resp.data);
-  } finally {
-    clearInterval(fakeTimer);
-  }
+  const resp = await http.request({ method: 'GET', url, responseType: 'arraybuffer' });
+  if (resp.status < 200 || resp.status >= 300)
+    throw new Error(`HTTP ${resp.status}`);
 
-  setProgress(fileId, 100, `✅ اكتمل التحميل`);
-  return data;
+  return fromBase64(resp.data);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -639,47 +722,33 @@ async function startDownload(fileId) {
   if (!f) return;
 
   setCardState(fileId, 'downloading');
-  setProgress(fileId, 0, 'جارٍ التحميل…');
+  setProgress(fileId, 0, 'جارٍ التهيئة…', 'spin');
 
   /* ── 1. هل الملف محفوظ مسبقاً؟ ─────────────────────────── */
   const cached = await storageLoad(fileId);
   if (cached) {
-    setProgress(fileId, 100, '✅ محفوظ محلياً');
-    setCardState(fileId, 'done', '✅ محفوظ محلياً — اضغط لفتح');
+    setProgress(fileId, 100, '✅ محفوظ محلياً', 'normal', 'يُفتح من التخزين المحلي');
+    setCardState(fileId, 'done', '✅ محفوظ — اضغط لفتح');
     fileState[fileId] = 'done';
     await renderPDFProgressive(fileId, cached);
     showToast('📂 تم فتح الملف من التخزين المحلي');
     return;
   }
 
-  /* ── 2. تحميل الملف بالطبقات الثلاث ───────────────────── */
-  /*
-   *  الطبقة 1: fetch() streaming
-   *    - في native (CapacitorHttp.enabled=true): يُوجَّه عبر HTTP النظام ← بدون CORS
-   *    - في الويب: يعمل إذا كان الخادم يدعم CORS
-   *
-   *  الطبقة 2: CapacitorHttp plugin مباشرةً (احتياطي native فقط)
-   *    - يضمن التحميل بدون CORS حتى لو فشل fetch()
-   *
-   *  الطبقة 3: خطأ واضح للمستخدم
-   */
   let buffer;
-
   clearError(fileId);
 
-  /* — محاولة الطبقة 1 — */
+  /* — محاولة الطبقة 1: fetch() streaming — */
   try {
-    setProgress(fileId, 0, 'جارٍ الاتصال…');
     buffer = await fetchStreamWithProgress(fileId, f.downloadUrl);
   } catch (err1) {
 
-    /* — محاولة الطبقة 2 (native فقط) — */
+    /* — محاولة الطبقة 2: CapacitorHttp مباشرةً (native فقط) — */
     if (isNative()) {
       try {
-        setProgress(fileId, 0, 'جارٍ التحميل عبر النظام…');
         buffer = await capHttpDownload(fileId, f.downloadUrl);
       } catch (err2) {
-        setProgress(fileId, 0, '❌ فشل التحميل');
+        setProgress(fileId, 0, '❌ فشل التحميل', 'normal', err1.message);
         setCardState(fileId, 'error', '❌ تعذّر التحميل');
         showError(fileId,
           'fetch: ' + err1.message + '\nCapacitorHttp: ' + err2.message,
@@ -690,27 +759,23 @@ async function startDownload(fileId) {
         return;
       }
     } else {
-      /* ويب: CORS يمنع التحميل */
-      setProgress(fileId, 0, '⚠️ تعذّر الاتصال بالخادم');
+      setProgress(fileId, 0, '⚠️ فشل التحميل', 'normal', err1.message);
       setCardState(fileId, 'error', '⚠️ فشل التحميل');
-      showError(fileId,
-        err1.message,
-        [
-          'السبب المحتمل: الخادم يمنع الطلب (CORS)',
-          'هذه الميزة تعمل بشكل كامل في تطبيق iOS/Android',
-          'في المتصفح يجب أن يدعم الخادم CORS',
-        ]
-      );
+      showError(fileId, err1.message, [
+        'السبب المحتمل: الخادم يمنع الطلب (CORS)',
+        'هذه الميزة تعمل بشكل كامل في تطبيق iOS/Android',
+        'في المتصفح يجب أن يدعم الخادم CORS',
+      ]);
       fileState[fileId] = 'error';
       return;
     }
   }
 
   /* ── 3. حفظ الملف محلياً عبر Capacitor Filesystem ──────── */
-  setProgress(fileId, 100, '💾 جارٍ الحفظ محلياً…');
+  setProgress(fileId, 100, 'جارٍ الحفظ…', 'spin', 'يُحفظ في ذاكرة الجهاز');
   await storageSave(fileId, buffer);
 
-  setProgress(fileId, 100, '✅ اكتمل التحميل والحفظ');
+  setProgress(fileId, 100, '✅ اكتمل التحميل', 'normal', 'محفوظ — جارٍ فتح العارض…');
   setCardState(fileId, 'done', '✅ محفوظ — اضغط لفتح');
   fileState[fileId] = 'done';
   Haptics.success();
