@@ -1,981 +1,451 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>PhoneBridge SDK</title>
-  <style>
-    :root {
-      --primary: #6C63FF;
-      --success: #22C55E;
-      --danger: #EF4444;
-      --warning: #F59E0B;
-      --info: #3B82F6;
-      --bg: #0F0F1A;
-      --card: #1A1A2E;
-      --text: #E2E8F0;
-      --muted: #94A3B8;
-      --border: rgba(108,99,255,0.18);
-      --r: 14px;
-    }
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Native Bridge — لوحة التحكم</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --border: #2d3150;
+    --accent: #6c63ff;
+    --accent2: #00d2a0;
+    --accent3: #ff6b6b;
+    --text: #e8eaed;
+    --muted: #8b8fa8;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Tahoma, system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 16px;
+    font-size: 14px;
+  }
+  h1 {
+    text-align: center;
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .subtitle {
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+    margin-bottom: 20px;
+  }
+  .status-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    font-size: 13px;
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .dot.green  { background: var(--accent2); box-shadow: 0 0 6px var(--accent2); }
+  .dot.orange { background: #ffa726; box-shadow: 0 0 6px #ffa726; }
+  .dot.red    { background: var(--accent3); box-shadow: 0 0 6px var(--accent3); }
+  .section-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 20px 0 10px;
+  }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .grid.cols-1 { grid-template-columns: 1fr; }
+  .btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 10px;
+    cursor: pointer;
+    transition: border-color .2s, transform .1s, background .2s;
+    color: var(--text);
+    font-size: 12px;
+    text-align: center;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn:active { transform: scale(.96); background: #21243a; }
+  .btn .icon { font-size: 22px; line-height: 1; }
+  .btn.accent  { border-color: var(--accent);  }
+  .btn.green   { border-color: var(--accent2); }
+  .btn.red     { border-color: var(--accent3); }
+  .btn.orange  { border-color: #ffa726; }
+  input, textarea {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-size: 13px;
+    margin-bottom: 8px;
+    font-family: inherit;
+  }
+  input:focus, textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  textarea { resize: vertical; min-height: 70px; }
+  .output-box {
+    background: #0a0c14;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    color: var(--accent2);
+    min-height: 60px;
+    word-break: break-all;
+    white-space: pre-wrap;
+    margin-top: 8px;
+  }
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 20px 0;
+  }
+  .row { display: flex; gap: 8px; margin-bottom: 8px; }
+  .row input { margin-bottom: 0; flex: 1; }
+  .row .btn {
+    flex-shrink: 0;
+    padding: 10px 14px;
+    font-size: 13px;
+    flex-direction: row;
+    gap: 6px;
+  }
+  label { font-size: 11px; color: var(--muted); display: block; margin-bottom: 4px; }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .05em;
+  }
+  .badge.android { background: #1e3a1e; color: var(--accent2); }
+  .badge.web     { background: #1e2a3a; color: #64b5f6; }
 
-    .hdr{background:linear-gradient(135deg,#1A1A2E,#16213E);border-bottom:1px solid var(--border);padding:16px 18px 12px;position:sticky;top:0;z-index:100}
-    .hdr-top{display:flex;align-items:center;gap:10px}
-    .hdr h1{font-size:19px;font-weight:800;background:linear-gradient(135deg,#6C63FF,#A78BFA);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-    .hdr-ver{font-size:10px;background:rgba(108,99,255,.2);color:#A78BFA;border:1px solid rgba(108,99,255,.3);padding:2px 8px;border-radius:20px;font-weight:700}
-    .hdr p{font-size:11px;color:var(--muted);margin-top:3px}
-    .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
-    .chip{font-size:10px;padding:3px 9px;border-radius:20px;font-weight:700}
-    .chip-g{background:rgba(34,197,94,.12);color:#22C55E;border:1px solid rgba(34,197,94,.25)}
-    .chip-p{background:rgba(108,99,255,.12);color:#A78BFA;border:1px solid rgba(108,99,255,.25)}
-    .chip-y{background:rgba(245,158,11,.12);color:#F59E0B;border:1px solid rgba(245,158,11,.25)}
-    .chip-r{background:rgba(239,68,68,.12);color:#EF4444;border:1px solid rgba(239,68,68,.25)}
-    .chip-b{background:rgba(59,130,246,.12);color:#60A5FA;border:1px solid rgba(59,130,246,.25)}
-
-    .wrap{padding:14px;max-width:600px;margin:0 auto}
-    .sec{margin-bottom:18px}
-    .sec-hdr{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:8px;display:flex;align-items:center;gap:8px}
-    .sec-hdr::after{content:'';flex:1;height:1px;background:var(--border)}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px}
-    .row{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px}
-    .ico{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
-    .title{font-size:14px;font-weight:700}
-    .sub{font-size:11px;color:var(--muted);margin-top:1px;font-family:'Courier New',monospace}
-
-    .btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:8px 14px;border-radius:9px;font-size:13px;font-weight:600;border:none;cursor:pointer;transition:.15s;-webkit-tap-highlight-color:transparent;white-space:nowrap}
-    .btn:active{transform:scale(.95)}
-    .btn-p{background:var(--primary);color:#fff}
-    .btn-g{background:rgba(34,197,94,.14);color:#22C55E;border:1px solid rgba(34,197,94,.28)}
-    .btn-d{background:rgba(239,68,68,.14);color:#EF4444;border:1px solid rgba(239,68,68,.28)}
-    .btn-w{background:rgba(245,158,11,.14);color:#F59E0B;border:1px solid rgba(245,158,11,.28)}
-    .btn-b{background:rgba(59,130,246,.14);color:#60A5FA;border:1px solid rgba(59,130,246,.28)}
-    .btn-s{background:rgba(148,163,184,.1);color:var(--muted);border:1px solid var(--border)}
-    .btn-sm{padding:6px 12px;font-size:12px}
-    .btn-xs{padding:4px 10px;font-size:11px}
-    .g2{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:8px}
-    .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-top:8px}
-    .g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-top:8px}
-
-    .out{background:#09090F;border:1px solid var(--border);border-radius:8px;padding:9px 11px;font-size:11.5px;font-family:'Courier New',monospace;min-height:36px;word-break:break-all;margin-top:9px;white-space:pre-wrap;display:none}
-    .out.show{display:block}
-    .out.ok{color:#22C55E;border-color:rgba(34,197,94,.25)}
-    .out.err{color:#EF4444;border-color:rgba(239,68,68,.25)}
-
-    .inp{width:100%;background:#09090F;border:1px solid var(--border);border-radius:7px;padding:8px 11px;color:var(--text);font-size:13px;margin-top:6px;outline:none;direction:ltr}
-    .inp:focus{border-color:var(--primary)}
-    .lbl{font-size:11px;color:var(--muted);margin-top:8px;display:block}
-
-    .img-box{width:100%;border-radius:9px;margin-top:9px;display:none;max-height:180px;object-fit:cover}
-    .img-box.show{display:block}
-    .share-img-btn{display:none;margin-top:7px}
-    .share-img-btn.show{display:flex}
-
-    .f-card{background:#09090F;border:1px solid var(--border);border-radius:8px;padding:9px 11px;margin-top:9px;display:none;align-items:center;gap:10px}
-    .f-card.show{display:flex}
-    .f-ico{font-size:22px}
-    .f-info{flex:1;min-width:0}
-    .f-name{font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .f-meta{font-size:10px;color:var(--muted);margin-top:2px}
-
-    .map-a{color:var(--primary);text-decoration:none;font-size:11px}
-
-    .sensor-live{background:#09090F;border:1px solid var(--border);border-radius:8px;padding:8px 11px;margin-top:8px;display:none;font-size:11px;font-family:'Courier New',monospace;color:#A78BFA}
-    .sensor-live.show{display:block}
-
-    .warn-bar{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:var(--r);padding:11px 14px;margin-bottom:14px;font-size:12px;color:#F59E0B;display:none}
-
-    hr{border:none;border-top:1px solid var(--border);margin:10px 0}
-
-    #toasts{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none}
-    .toast{background:#1E1E3A;border:1px solid var(--border);color:var(--text);padding:9px 18px;border-radius:28px;font-size:12px;font-weight:600;box-shadow:0 6px 24px rgba(0,0,0,.5);animation:su .25s ease;white-space:nowrap}
-    @keyframes su{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-  </style>
+  /* Notification for web */
+  #toast-container {
+    position: fixed; bottom: 20px; left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999; display: flex; flex-direction: column; gap: 8px; align-items: center;
+  }
+</style>
 </head>
 <body>
 
-<div class="hdr">
-  <div class="hdr-top">
-    <h1>⚡ PhoneBridge</h1>
-    <span class="hdr-ver" id="sdk-ver">SDK</span>
-  </div>
-  <p id="hdr-sub">يتحقق من الاتصال...</p>
-  <div class="chips">
-    <span class="chip chip-p" id="bridge-chip">⏳ جاري...</span>
-    <span class="chip chip-g" id="net-chip">🌐 متصل</span>
-    <span class="chip chip-y" id="plat-chip">📱 —</span>
-  </div>
+<h1>🔗 Native Bridge</h1>
+<p class="subtitle">نظام التواصل مع ميزات الهاتف النيتيف</p>
+
+<!-- Status Bar -->
+<div class="status-bar" id="statusBar">
+  <div class="dot" id="statusDot"></div>
+  <span id="statusText">جاري الكشف عن البيئة...</span>
 </div>
 
-<div class="wrap">
-
-  <div class="warn-bar" id="warn-bar">
-    ⚠️ PhoneBridge SDK غير متاح — افتح الموقع داخل تطبيق PhoneBridge للوصول لميزات الهاتف.
-  </div>
-
-  <!-- ══ device ══ -->
-  <div class="sec">
-    <div class="sec-hdr">PhoneBridge.device</div>
-    <div class="card">
-      <div class="row">
-        <div class="ico" style="background:rgba(108,99,255,.15)">📱</div>
-        <div><div class="title">الجهاز والبطارية</div><div class="sub">device.getInfo() · getBatteryLevel() · isCharging()</div></div>
-      </div>
-      <div class="g3">
-        <button class="btn btn-p btn-sm" onclick="devInfo()">🔍 getInfo</button>
-        <button class="btn btn-w btn-sm" onclick="devBattery()">🔋 getBatteryLevel</button>
-        <button class="btn btn-s btn-sm" onclick="devCharging()">⚡ isCharging</button>
-      </div>
-      <div class="out" id="dev-out"></div>
-    </div>
-  </div>
-
-  <!-- ══ camera / gallery ══ -->
-  <div class="sec">
-    <div class="sec-hdr">PhoneBridge.camera · gallery</div>
-    <div class="card">
-      <div class="row">
-        <div class="ico" style="background:rgba(239,68,68,.15)">📷</div>
-        <div><div class="title">الكاميرا</div><div class="sub">camera.capture({ quality: 0.8 }) · camera.recordVideo({ maxDuration: 30 })</div></div>
-      </div>
-      <div class="g2">
-        <button class="btn btn-d btn-sm" onclick="camCapture()">📸 capture</button>
-        <button class="btn btn-d btn-sm" onclick="camRecord()">🎥 recordVideo</button>
-      </div>
-      <hr />
-      <div class="row" style="margin-bottom:4px">
-        <div class="ico" style="background:rgba(34,197,94,.15)">🖼️</div>
-        <div><div class="title">المعرض</div><div class="sub">gallery.pickImage() · pickVideo() · pickMultiple({ limit: 5 })</div></div>
-      </div>
-      <div class="g3">
-        <button class="btn btn-g btn-sm" onclick="galImage()">🖼️ pickImage</button>
-        <button class="btn btn-g btn-sm" onclick="galVideo()">🎬 pickVideo</button>
-        <button class="btn btn-g btn-sm" onclick="galMulti()">📚 pickMultiple</button>
-      </div>
-      <img class="img-box" id="cam-img" />
-      <button class="btn btn-b btn-sm share-img-btn" id="share-img-btn" onclick="shareImg()">📤 share.image(uri, title)</button>
-      <div class="out" id="cam-out"></div>
-    </div>
-  </div>
-
-  <!-- ══ location ══ -->
-  <div class="sec">
-    <div class="sec-hdr">PhoneBridge.location</div>
-    <div class="card">
-      <div class="row">
-        <div class="ico" style="background:rgba(34,197,94,.15)">📍</div>
-        <div><div class="title">الموقع الجغرافي</div><div class="sub">getCurrent({ accuracy: 4 }) · watch() · stopWatch() · getPermissionStatus()</div></div>
-      </div>
-      <div class="g4">
-        <button class="btn btn-g btn-sm" onclick="locGet()">📍 getCurrent</button>
-        <button class="btn btn-g btn-sm" onclick="locWatch()">👁️ watch</button>
-        <button class="btn btn-s btn-sm" onclick="locStop()">⏹ stopWatch</button>
-        <button class="btn btn-s btn-sm" onclick="locPerm()">🔐 status</button>
-      </div>
-      <div class="out" id="loc-out"></div>
-    </div>
-  </div>
-
-  <!-- ══ notifications ══ -->
-  <div class="sec">
-    <div class="sec-hdr">PhoneBridge.notifications</div>
-    <div class="card">
-      <div class="row">
-        <div class="ico" style="background:rgba(245,158,11,.15)">🔔</div>
-        <div><div class="title">الإشعارات المحلية</div><div class="sub">requestPermission() · sendLocal({ title, body, delay }) · cancelAll()</div></div>
-      </div>
-      <label class="lbl">العنوان</label>
-      <input class="inp" id="notif-t" value="مرحباً من PhoneBridge! 👋" />
-      <label class="lbl">النص</label>
-      <input class="inp" id="notif-b" value="هذا إشعار تجريبي من موقعك" />
-      <div class="g3" style="margin-top:9px">
-        <button class="btn btn-w btn-sm" onclick="notifPerm()">🔐 requestPermission</button>
-        <button class="btn btn-w btn-sm" onclick="notifSend()">📤 sendLocal</button>
-        <button class="btn btn-w btn-sm" onclick="notifDelay()">⏰ delay: 5</button>
-      </div>
-      <div class="g3">
-        <button class="btn btn-s btn-sm" onclick="notifCancel()">🚫 cancelAll</button>
-        <button class="btn btn-s btn-sm" onclick="notifBadge()">🔢 getBadgeCount</button>
-        <button class="btn btn-s btn-sm" onclick="notifSetBadge()">✏️ setBadgeCount(3)</button>
-      </div>
-      <div class="out" id="notif-out"></div>
-    </div>
-  </div>
-
-  <!-- ══ browser / deepLink ══ -->
-  <div class="sec">
-    <div class="sec-hdr">In-App Browser · PhoneBridge.deepLink</div>
-    <div class="card">
-      <div class="row">
-        <div class="ico" style="background:rgba(59,130,246,.15)">🌐</div>
-        <div><div class="title">فتح الروابط</div><div class="sub">browser.open(url) · deepLink.open(url) · deepLink.getInitialURL()</div></div>
-      </div>
-      <label class="lbl">الرابط</label>
-      <input class="inp" id="browser-url" value="https://google.com" />
-      <div class="g3" style="margin-top:8px">
-        <button class="btn btn-b btn-sm" onclick="browserOpen()">🌐 browser.open</button>
-        <button class="btn btn-s btn-sm" onclick="deepOpen()">🔗 deepLink.open</button>
-        <button class="btn btn-s btn-sm" onclick="dlInitial()">📥 getInitialURL</button>
-      </div>
-      <div class="out" id="browser-out"></div>
-    </div>
-  </div>
-
-  <!-- ══ files ══ -->
-  <div class="sec">
-    <div class="sec-hdr">PhoneBridge.files</div>
-    <div class="card">
-      <div class="row">
-        <div class="ico" style="background:rgba(245,158,11,.15)">📂</div>
-        <div><div class="title">الملفات</div><div class="sub">files.pickDocument() · files.download(url, name) · files.save({ uri }) · files.shareDocument()</div></div>
-      </div>
-      <div class="g2">
-        <button class="btn btn-w btn-sm" onclick="filePickAny()">📂 pickDocument(*/*)</button>
-        <button class="btn btn-w btn-sm" onclick="filePickPDF()">📄 pickDocument(pdf)</button>
-      </div>
-      <div class="g2" style="margin-top:6px">
-        <button class="btn btn-s btn-sm" onclick="filePickImg()">🖼️ pickDocument(image)</button>
-        <button class="btn btn-s btn-sm" onclick="filePickMulti()">📚 multiple: true</button>
-      </div>
-      <div class="f-card" id="f-card">
-        <div class="f-ico" id="f-ico">📄</div>
-        <div class="f-info">
-          <div class="f-name" id="f-name">—</div>
-          <div class="f-meta" id="f-meta">—</div>
-        </div>
-        <button class="btn btn-b btn-xs" onclick="fileShare()">📤 shareDocument</button>
-      </div>
-      <hr />
-      <label class="lbl">رابط الملف</label>
-      <input class="inp" id="dl-url" value="https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" />
-      <button class="btn btn-g btn-sm" style="margin-top:7px;width:100%" onclick="fileDl()">⬇️ files.download(url, 'file.pdf')</button>
-      <div class="out" id="file-out"></div>
-    </div>
-  </div>
-
-  <!-- ══ share ══ -->
-  <div class="sec">
-    <div class="sec-hdr">PhoneBridge.share</div>
-    <div class="card">
-      <div class="row">
-        <div class="ico" style="background:rgba(34,197,94,.15)">📤</div>
-        <div><div class="title">المشاركة</div><div class="sub">share.text(t, title) · share.url(url, title) · share.file(uri, mime) · share.image(uri, title)</div></div>
-      </div>
-      <div class="g4">
-        <button class="btn btn-g btn-sm" onclick="shareTxt()">📝 text</button>
-        <button class="btn btn-g btn-sm" onclick="shareUrl()">🔗 url</button>
-        <button class="btn btn-g btn-sm" onclick="shareFile()">📄 file</button>
-        <button class="btn btn-g btn-sm" id="share-img2" onclick="shareImg2()" style="display:none">🖼️ image</button>
-      </div>
-      <div class="out" id="share-out"></div>
-    </div>
-  </div>
-
-  <!-- ══ biometric ══ -->
-  <div class="sec">
-    <div class="sec-hdr">PhoneBridge.biometric</div>
-    <div class="card">
-      <div class="row">
-        <div class="ico" style="background:rgba(108,99,255,.15)">🔒</div>
-        <div><div class="title">البيومتري</div><div class="sub">biometric.isAvailable() · getSupportedTypes() · authenticate({ promptMessage, fallbackLabel })</div></div>
-      </div>
-      <div class="g3">
-        <button class="btn btn-p btn-sm" onclick="bioAuth()">🔓 authenticate</button>
-        <button class="btn btn-s btn-sm" onclick="bioAvail()">✅ isAvailable</button>
-        <button class="btn btn-s btn-sm" onclick="bioTypes()">📋 getSupportedTypes</button>
-      </div>
-      <div class="out" id="bio-out"></div>
-    </div>
-  </div>
-
-  <!-- ══ contacts ══ -->
-  <div class="sec">
-    <div class="sec-hdr">PhoneBridge.contacts</div>
-    <div class="card">
-      <div class="row">
-        <div class="ico" style="background:rgba(34,197,94,.15)">👤</div>
-        <div><div class="title">جهات الاتصال</div><div class="sub">contacts.getAll() → [{ id, name, phones, emails }] · contacts.search(query)</div></div>
-      </div>
-      <label class="lbl">بحث</label>
-      <input class="inp" id="c-q" placeholder="اسم جهة الاتصال..." />
-      <div class="g2" style="margin-top:8px">
-        <button class="btn btn-g btn-sm" onclick="conAll()">📋 getAll()</button>
-        <button class="btn btn-s btn-sm" onclick="conSearch()">🔍 search(query)</button>
-      </div>
-      <div class="out" id="con-out"></div>
-    </div>
-  </div>
-
-  <!-- ══ calendar ══ -->
-  <div class="sec">
-    <div class="sec-hdr">PhoneBridge.calendar</div>
-    <div class="card">
-      <div class="row">
-        <div class="ico" style="background:rgba(59,130,246,.15)">📅</div>
-        <div><div class="title">التقويم</div><div class="sub">calendar.createEvent({ title, startDate, endDate, notes }) · calendar.getEvents({ startDate, endDate })</div></div>
-      </div>
-      <div class="g2">
-        <button class="btn btn-b btn-sm" onclick="calCreate()">➕ createEvent</button>
-        <button class="btn btn-s btn-sm" onclick="calGet()">📋 getEvents</button>
-      </div>
-      <div class="out" id="cal-out"></div>
-    </div>
-  </div>
-
-  <!-- ══ clipboard ══ -->
-  <div class="sec">
-    <div class="sec-hdr">PhoneBridge.clipboard</div>
-    <div class="card">
-      <div class="row">
-        <div class="ico" style="background:rgba(108,99,255,.15)">📋</div>
-        <div><div class="title">الحافظة</div><div class="sub">clipboard.copy(text) · clipboard.read() → { text }</div></div>
-      </div>
-      <label class="lbl">النص</label>
-      <input class="inp" id="clip-t" value="PhoneBridge SDK 🚀" />
-      <div class="g2" style="margin-top:8px">
-        <button class="btn btn-p btn-sm" onclick="clipCopy()">📋 copy(text)</button>
-        <button class="btn btn-s btn-sm" onclick="clipRead()">📄 read()</button>
-      </div>
-      <div class="out" id="clip-out"></div>
-    </div>
-  </div>
-
-  <!-- ══ sms · call · email ══ -->
-  <div class="sec">
-    <div class="sec-hdr">PhoneBridge.sms · call · email</div>
-    <div class="card">
-      <div class="row">
-        <div class="ico" style="background:rgba(34,197,94,.15)">📞</div>
-        <div><div class="title">الاتصالات</div><div class="sub">call.dial(phone) · sms.send(phone, body) · email.send({ to, subject, body, cc })</div></div>
-      </div>
-      <label class="lbl">رقم الهاتف</label>
-      <input class="inp" id="ph" placeholder="+966xxxxxxxxx" />
-      <label class="lbl">نص الرسالة</label>
-      <input class="inp" id="sms-b" value="مرحباً من PhoneBridge!" />
-      <div class="g3" style="margin-top:8px">
-        <button class="btn btn-g btn-sm" onclick="doDial()">📞 call.dial</button>
-        <button class="btn btn-p btn-sm" onclick="doSMS()">💬 sms.send</button>
-        <button class="btn btn-w btn-sm" onclick="doEmail()">📧 email.send</button>
-      </div>
-      <div class="out" id="comm-out"></div>
-    </div>
-  </div>
-
-  <!-- ══ storage ══ -->
-  <div class="sec">
-    <div class="sec-hdr">PhoneBridge.storage</div>
-    <div class="card">
-      <div class="row">
-        <div class="ico" style="background:rgba(34,197,94,.15)">💾</div>
-        <div><div class="title">التخزين الدائم</div><div class="sub">storage.set(k, v) · get(k) → { value } · remove(k) · clear() · getAllKeys() → { keys }</div></div>
-      </div>
-      <div class="g2">
-        <div>
-          <label class="lbl">المفتاح</label>
-          <input class="inp" id="s-k" value="myKey" />
-        </div>
-        <div>
-          <label class="lbl">القيمة</label>
-          <input class="inp" id="s-v" value="مرحباً!" />
-        </div>
-      </div>
-      <div class="g4" style="margin-top:8px">
-        <button class="btn btn-g btn-sm" onclick="stSet()">💾 set</button>
-        <button class="btn btn-p btn-sm" onclick="stGet()">📂 get</button>
-        <button class="btn btn-d btn-sm" onclick="stDel()">🗑️ remove</button>
-        <button class="btn btn-s btn-sm" onclick="stKeys()">🔑 getAllKeys</button>
-      </div>
-      <div class="out" id="st-out"></div>
-    </div>
-  </div>
-
-  <!-- ══ vibration ══ -->
-  <div class="sec">
-    <div class="sec-hdr">PhoneBridge.vibration</div>
-    <div class="card">
-      <div class="row">
-        <div class="ico" style="background:rgba(245,158,11,.15)">📳</div>
-        <div><div class="title">الاهتزاز</div><div class="sub">vibration.vibrate(200) · vibrate([0,200,100,200]) · impact('light'|'medium'|'heavy')</div></div>
-      </div>
-      <div class="g3">
-        <button class="btn btn-w btn-sm" onclick="vib200()">📳 vibrate(200)</button>
-        <button class="btn btn-w btn-sm" onclick="vibPat()">〰️ vibrate(pattern)</button>
-        <button class="btn btn-w btn-sm" onclick="vibImpL()">🤏 impact('light')</button>
-      </div>
-      <div class="g2" style="margin-top:6px">
-        <button class="btn btn-w btn-sm" onclick="vibImpM()">👊 impact('medium')</button>
-        <button class="btn btn-w btn-sm" onclick="vibImpH()">💥 impact('heavy')</button>
-      </div>
-      <div class="out" id="vib-out"></div>
-    </div>
-  </div>
-
-  <!-- ══ audio ══ -->
-  <div class="sec">
-    <div class="sec-hdr">PhoneBridge.audio</div>
-    <div class="card">
-      <div class="row">
-        <div class="ico" style="background:rgba(239,68,68,.15)">🎙️</div>
-        <div><div class="title">الصوت</div><div class="sub">audio.record({ quality }) · audio.stop() · audio.play(uri) · audio.pause()</div></div>
-      </div>
-      <div class="g4">
-        <button class="btn btn-d btn-sm" onclick="audRec()">🔴 record</button>
-        <button class="btn btn-s btn-sm" onclick="audStop()">⏹ stop</button>
-        <button class="btn btn-g btn-sm" onclick="audPlay()">▶️ play</button>
-        <button class="btn btn-s btn-sm" onclick="audPause()">⏸ pause</button>
-      </div>
-      <label class="lbl">رابط ملف الصوت</label>
-      <input class="inp" id="aud-uri" value="file:///path/to/audio.m4a" />
-      <div class="out" id="aud-out"></div>
-    </div>
-  </div>
-
-  <!-- ══ sensors ══ -->
-  <div class="sec">
-    <div class="sec-hdr">PhoneBridge.sensors</div>
-    <div class="card">
-      <div class="row">
-        <div class="ico" style="background:rgba(108,99,255,.15)">🧭</div>
-        <div><div class="title">الحساسيات</div><div class="sub">getAccelerometer() · getGyroscope() · getCompass() · getBarometer() · watchAccelerometer(100ms)</div></div>
-      </div>
-      <div class="g4">
-        <button class="btn btn-p btn-sm" onclick="sensAccel()">📐 Accel</button>
-        <button class="btn btn-p btn-sm" onclick="sensGyro()">🌀 Gyro</button>
-        <button class="btn btn-p btn-sm" onclick="sensComp()">🧭 Compass</button>
-        <button class="btn btn-p btn-sm" onclick="sensBar()">🌡 Baro</button>
-      </div>
-      <div class="g2" style="margin-top:6px">
-        <button class="btn btn-b btn-sm" onclick="sensWatch()">▶️ watchAccelerometer(100)</button>
-        <button class="btn btn-s btn-sm" onclick="sensStop()">⏹ stopAccelerometer</button>
-      </div>
-      <div class="sensor-live" id="sens-live">📡 لا توجد بيانات مباشرة</div>
-      <div class="out" id="sens-out"></div>
-    </div>
-  </div>
-
-  <!-- ══ network ══ -->
-  <div class="sec">
-    <div class="sec-hdr">PhoneBridge.network</div>
-    <div class="card">
-      <div class="row">
-        <div class="ico" style="background:rgba(59,130,246,.15)">📶</div>
-        <div><div class="title">الشبكة</div><div class="sub">network.getStatus() → { isConnected, isInternetReachable, type } · isConnected() · getType()</div></div>
-      </div>
-      <div class="g3">
-        <button class="btn btn-b btn-sm" onclick="netStatus()">📶 getStatus</button>
-        <button class="btn btn-s btn-sm" onclick="netConn()">✅ isConnected</button>
-        <button class="btn btn-s btn-sm" onclick="netType()">📡 getType</button>
-      </div>
-      <div class="out" id="net-out"></div>
-    </div>
-  </div>
-
-  <!-- ══ app ══ -->
-  <div class="sec">
-    <div class="sec-hdr">PhoneBridge.app</div>
-    <div class="card">
-      <div class="row">
-        <div class="ico" style="background:rgba(148,163,184,.12)">⚙️</div>
-        <div><div class="title">التطبيق</div><div class="sub">app.getInfo() → { name, version, platform, sdkVersion } · openSettings() · keepScreenAwake(true)</div></div>
-      </div>
-      <div class="g3">
-        <button class="btn btn-s btn-sm" onclick="appInfo()">ℹ️ getInfo</button>
-        <button class="btn btn-s btn-sm" onclick="appSettings()">⚙️ openSettings</button>
-        <button class="btn btn-s btn-sm" onclick="appAwake()">💡 keepScreenAwake</button>
-      </div>
-      <div class="out" id="app-out"></div>
-    </div>
-  </div>
-
-  <!-- ══ bluetooth · nfc ══ -->
-  <div class="sec">
-    <div class="sec-hdr">PhoneBridge.bluetooth · nfc <span style="font-size:10px;background:rgba(239,68,68,.15);color:#EF4444;border:1px solid rgba(239,68,68,.3);padding:2px 7px;border-radius:10px;margin-right:6px">native build</span></div>
-    <div class="card">
-      <div class="row">
-        <div class="ico" style="background:rgba(59,130,246,.15)">📡</div>
-        <div><div class="title">Bluetooth &amp; NFC</div><div class="sub">bluetooth.isEnabled() · nfc.isAvailable() — تتطلبان native build</div></div>
-      </div>
-      <div class="g2">
-        <button class="btn btn-b btn-sm" onclick="btCheck()">🔵 bluetooth.isEnabled</button>
-        <button class="btn btn-b btn-sm" onclick="nfcCheck()">📳 nfc.isAvailable</button>
-      </div>
-      <div class="out" id="bt-out"></div>
-    </div>
-  </div>
-
-  <div style="height:36px"></div>
+<!-- Device Info -->
+<p class="section-title">📱 معلومات الجهاز</p>
+<div class="output-box" id="deviceInfo">اضغط لعرض المعلومات...</div>
+<div class="grid" style="margin-top:8px">
+  <button class="btn accent" onclick="showDeviceInfo()">
+    <span class="icon">ℹ️</span> عرض معلومات الجهاز
+  </button>
+  <button class="btn" onclick="checkNetwork()">
+    <span class="icon">🌐</span> حالة الشبكة
+  </button>
 </div>
-<div id="toasts"></div>
 
+<div class="divider"></div>
+
+<!-- Notifications & Vibration -->
+<p class="section-title">🔔 الإشعارات والاهتزاز</p>
+<div class="grid">
+  <button class="btn orange" onclick="AB.showToast('مرحباً من التطبيق! 👋')">
+    <span class="icon">💬</span> Toast رسالة
+  </button>
+  <button class="btn orange" onclick="sendNotif()">
+    <span class="icon">🔔</span> إشعار النظام
+  </button>
+  <button class="btn" onclick="AB.vibrate(200)">
+    <span class="icon">📳</span> اهتزاز خفيف
+  </button>
+  <button class="btn" onclick="AB.vibrate(600)">
+    <span class="icon">📳</span> اهتزاز قوي
+  </button>
+</div>
+
+<div class="divider"></div>
+
+<!-- Sharing -->
+<p class="section-title">🔗 مشاركة المحتوى</p>
+<label>النص المراد مشاركته:</label>
+<textarea id="shareText">مرحباً! شاهد هذا الموقع الرائع 🌟 https://example.com</textarea>
+<div class="grid">
+  <button class="btn green" onclick="doShareText()">
+    <span class="icon">📤</span> مشاركة النص
+  </button>
+  <button class="btn" onclick="doCopyText()">
+    <span class="icon">📋</span> نسخ للحافظة
+  </button>
+</div>
+<label style="margin-top:10px">مسار الصورة (داخل الجهاز):</label>
+<div class="row">
+  <input type="text" id="imagePath" placeholder="/storage/emulated/0/DCIM/photo.jpg">
+  <button class="btn green" onclick="doShareImage()">
+    <span class="icon">🖼️</span> مشاركة
+  </button>
+</div>
+
+<div class="divider"></div>
+
+<!-- Clipboard -->
+<p class="section-title">📋 الحافظة</p>
+<div class="grid">
+  <button class="btn accent" onclick="readClipboard()">
+    <span class="icon">📋</span> قراءة الحافظة
+  </button>
+  <button class="btn" onclick="AB.copyToClipboard(Date.now().toString()); AB.showToast('تم نسخ الوقت ⏱️')">
+    <span class="icon">⏱️</span> نسخ الوقت
+  </button>
+</div>
+<div class="output-box" id="clipboardOut">اضغط "قراءة الحافظة"...</div>
+
+<div class="divider"></div>
+
+<!-- Calls & Apps -->
+<p class="section-title">📞 الاتصالات والتطبيقات</p>
+<label>رقم الهاتف:</label>
+<div class="row">
+  <input type="tel" id="phoneNum" placeholder="+966501234567">
+  <button class="btn green" onclick="AB.makeCall(document.getElementById('phoneNum').value)">
+    <span class="icon">📞</span>
+  </button>
+</div>
+<label>فتح واتساب (رقم + رسالة):</label>
+<div class="row">
+  <input type="tel" id="waPhone" placeholder="966501234567">
+  <input type="text" id="waMsg" placeholder="مرحباً!" style="margin-bottom:0">
+  <button class="btn green" onclick="AB.openWhatsApp(document.getElementById('waPhone').value, document.getElementById('waMsg').value)">
+    <span class="icon">💬</span>
+  </button>
+</div>
+
+<div class="divider"></div>
+
+<!-- File & URL -->
+<p class="section-title">📁 الملفات والروابط</p>
+<div class="grid">
+  <button class="btn" onclick="AB.openFileManager()">
+    <span class="icon">📁</span> كل الملفات
+  </button>
+  <button class="btn" onclick="AB.openFileManager('image/*')">
+    <span class="icon">🖼️</span> اختر صورة
+  </button>
+  <button class="btn" onclick="AB.openFileManager('application/pdf')">
+    <span class="icon">📄</span> اختر PDF
+  </button>
+  <button class="btn" onclick="AB.openCamera()">
+    <span class="icon">📷</span> فتح الكاميرا
+  </button>
+</div>
+<label style="margin-top:10px">فتح رابط في المتصفح:</label>
+<div class="row">
+  <input type="url" id="urlInput" value="https://google.com">
+  <button class="btn accent" onclick="AB.openUrl(document.getElementById('urlInput').value)">
+    <span class="icon">🌐</span> فتح
+  </button>
+</div>
+
+<div class="divider"></div>
+
+<!-- Email -->
+<p class="section-title">✉️ البريد الإلكتروني</p>
+<input type="email" id="emailTo" placeholder="البريد المستقبل: user@example.com">
+<input type="text" id="emailSubject" placeholder="الموضوع">
+<textarea id="emailBody" style="min-height:55px" placeholder="نص الرسالة..."></textarea>
+<button class="btn green cols-1" style="width:100%;padding:12px" onclick="doSendEmail()">
+  <span class="icon">✉️</span> إرسال بريد إلكتروني
+</button>
+
+<div class="divider"></div>
+
+<!-- Developer Console -->
+<p class="section-title">🛠️ وحدة المطوّر — تشغيل JS مباشرةً</p>
+<textarea id="jsCode" style="font-family:monospace;min-height:80px">AndroidBridge.showToast('تم تشغيل الكود بنجاح ✅');</textarea>
+<button class="btn accent" style="width:100%;padding:12px;margin-top:4px" onclick="runCode()">
+  <span class="icon">▶️</span> تشغيل الكود
+</button>
+<div class="output-box" id="jsOutput">النتيجة ستظهر هنا...</div>
+
+<div id="toast-container"></div>
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!--                 تضمين مكتبة native-bridge.js                    -->
+<!-- قم بتغيير المسار ليتناسب مع موقعك:                              -->
+<!--   <script src="/native-bridge.js"></script>                     -->
+<!-- ════════════════════════════════════════════════════════════════ -->
 <script>
-/**
- * PhoneBridge SDK — injected automatically by the app.
- * Documentation: see PhoneBridge SDK Documentation.
- *
- * To check if the SDK is available:
- *   if (window.PhoneBridge) { ... }
- *
- * To wait for the SDK:
- *   window.addEventListener('PhoneBridgeReady', () => { ... });
- */
+/* ═══════════════════════════════════════════════════════════════
+   INLINE COPY of native-bridge.js (للاستخدام بدون ملف خارجي)
+   يمكنك استبداله بـ: <script src="native-bridge.js"></script>
+   ═══════════════════════════════════════════════════════════════ */
+;(function (global) {
+  'use strict';
+  var NB  = global.NativeBridge  || null;
+  var AI  = global.AppInventor   || null;
+  var KOD = global.Kodular       || null;
+  var isAndroid = !!(NB || AI || KOD);
 
-/* ─── state ─── */
-var _lastImgUri = null;
-var _lastFileUri = null;
-var _lastFileMime = null;
-var _accelUnsub = null;
-
-/* ─── helpers ─── */
-function out(id, data, isErr) {
-  var el = document.getElementById(id);
-  el.classList.add('show');
-  el.classList.remove('ok', 'err');
-  el.classList.add(isErr ? 'err' : 'ok');
-  el.textContent = (isErr ? '❌ ' : '✅ ') +
-    (typeof data === 'string' ? data : JSON.stringify(data, null, 2));
-}
-
-function toast(msg) {
-  var t = document.createElement('div');
-  t.className = 'toast';
-  t.textContent = msg;
-  document.getElementById('toasts').appendChild(t);
-  setTimeout(function() { t.remove(); }, 2800);
-}
-
-async function run(outId, fn) {
-  try {
-    var d = await fn();
-    out(outId, d, false);
-    return d;
-  } catch (e) {
-    out(outId, e.message, true);
-    toast('❌ ' + e.message);
-    return null;
+  function _webToast(msg) {
+    var d = document.createElement('div');
+    d.textContent = msg;
+    d.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.82);color:#fff;padding:9px 20px;border-radius:24px;z-index:2147483647;font-size:14px;max-width:80vw;text-align:center;opacity:0;transition:opacity .25s;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,.35)';
+    document.body.appendChild(d);
+    requestAnimationFrame(function(){
+      d.style.opacity='1';
+      setTimeout(function(){ d.style.opacity='0'; setTimeout(function(){ d.parentNode&&d.parentNode.removeChild(d); },300); },2200);
+    });
   }
-}
 
-/* ─── SDK ready: using PhoneBridgeReady event as documented ─── */
-window.addEventListener('PhoneBridgeReady', function() {
-  var chip = document.getElementById('bridge-chip');
-  chip.textContent = '✅ SDK جاهز';
-  chip.className = 'chip chip-g';
-
-  // app.getInfo() → { name, version, platform, sdkVersion }
-  PhoneBridge.app.getInfo().then(function(info) {
-    document.getElementById('hdr-sub').textContent =
-      info.name + ' v' + info.version + ' | SDK v' + info.sdkVersion;
-    document.getElementById('sdk-ver').textContent = 'SDK v' + info.sdkVersion;
-    document.getElementById('plat-chip').textContent = '📱 ' + info.platform;
-  }).catch(function() {});
-
-  // Subscribe to network change events
-  PhoneBridge.on('network.change', function(data) {
-    var nc = document.getElementById('net-chip');
-    nc.textContent = data.isConnected ? '🌐 متصل' : '🔴 غير متصل';
-    nc.className = data.isConnected ? 'chip chip-g' : 'chip chip-r';
-  });
-});
-
-/* Fallback: if running outside the app (plain browser) */
-window.addEventListener('load', function() {
-  setTimeout(function() {
-    if (window.PhoneBridge) return; // SDK already available
-    var chip = document.getElementById('bridge-chip');
-    chip.textContent = '⚠️ SDK غير متاح';
-    chip.className = 'chip chip-y';
-    document.getElementById('hdr-sub').textContent = 'افتح الموقع داخل تطبيق PhoneBridge';
-    document.getElementById('warn-bar').style.display = 'block';
-    if (!navigator.onLine) {
-      document.getElementById('net-chip').textContent = '🔴 غير متصل';
-      document.getElementById('net-chip').className = 'chip chip-r';
-    }
-  }, 1000);
-});
-
-/* ════════════ PhoneBridge.device ════════════ */
-// device.getInfo() → { brand, manufacturer, modelName, osName, osVersion, platform, isDevice }
-function devInfo() { run('dev-out', () => PhoneBridge.device.getInfo()); }
-
-// device.getBatteryLevel() → { level }  (0–1)
-async function devBattery() {
-  var r = await run('dev-out', () => PhoneBridge.device.getBatteryLevel());
-  if (r) out('dev-out', { batteryLevel: Math.round(r.level * 100) + '%' }, false);
-}
-
-// device.isCharging() → { charging }
-async function devCharging() {
-  var r = await run('dev-out', () => PhoneBridge.device.isCharging());
-  if (r) out('dev-out', { charging: r.charging ? '🔌 يشحن' : '🔋 لا يشحن' }, false);
-}
-
-/* ════════════ PhoneBridge.camera ════════════ */
-function _showImg(uri) {
-  _lastImgUri = uri;
-  var img = document.getElementById('cam-img');
-  img.src = uri;
-  img.classList.add('show');
-  document.getElementById('share-img-btn').classList.add('show');
-  document.getElementById('share-img2').style.display = 'flex';
-}
-
-// camera.capture({ quality: 0.8, allowsEditing: true }) → { uri, width, height }
-async function camCapture() {
-  var r = await run('cam-out', () => PhoneBridge.camera.capture({ quality: 0.8, allowsEditing: false }));
-  if (r && r.uri) _showImg(r.uri);
-}
-
-// camera.recordVideo({ maxDuration: 30 }) → { uri, duration }
-function camRecord() {
-  run('cam-out', () => PhoneBridge.camera.recordVideo({ maxDuration: 30 }));
-}
-
-/* ════════════ PhoneBridge.gallery ════════════ */
-// gallery.pickImage({ quality: 0.8 }) → { uri, width, height }
-async function galImage() {
-  var r = await run('cam-out', () => PhoneBridge.gallery.pickImage({ quality: 0.8 }));
-  if (r && r.uri) _showImg(r.uri);
-}
-
-// gallery.pickVideo()
-function galVideo() { run('cam-out', () => PhoneBridge.gallery.pickVideo()); }
-
-// gallery.pickMultiple({ limit: 5 }) → { assets: [{ uri, width, height }] }
-async function galMulti() {
-  var r = await run('cam-out', () => PhoneBridge.gallery.pickMultiple({ limit: 5 }));
-  if (r && r.assets && r.assets[0]) _showImg(r.assets[0].uri);
-}
-
-// share.image(uri, title)
-function shareImg() {
-  if (!_lastImgUri) { toast('التقط صورة أولاً'); return; }
-  run('cam-out', () => PhoneBridge.share.image(_lastImgUri, 'مشاركة صورة'));
-}
-function shareImg2() { shareImg(); }
-
-/* ════════════ PhoneBridge.location ════════════ */
-// location.getCurrent({ accuracy: 4 }) → { latitude, longitude, accuracy, altitude }
-// accuracy: 1=Lowest 2=Low 3=Balanced 4=High 5=Highest
-async function locGet() {
-  var r = await run('loc-out', () => PhoneBridge.location.getCurrent({ accuracy: 4 }));
-  if (r) {
-    var lat = r.latitude.toFixed(6), lng = r.longitude.toFixed(6);
-    document.getElementById('loc-out').innerHTML =
-      '✅ latitude: ' + lat + ' | longitude: ' + lng +
-      '\n<a class="map-a" href="https://www.google.com/maps?q=' + lat + ',' + lng + '" target="_blank">🗺️ عرض على خرائط Google</a>';
-  }
-}
-
-// location.watch() + PhoneBridge.on('location.update', callback)
-function locWatch() {
-  run('loc-out', () => PhoneBridge.location.watch());
-  PhoneBridge.on('location.update', function(data) {
-    out('loc-out', data, false);
-  });
-  toast('👁️ يراقب الموقع...');
-}
-
-// location.stopWatch()
-function locStop() { run('loc-out', () => PhoneBridge.location.stopWatch()); }
-
-// location.getPermissionStatus() → { status }
-function locPerm() { run('loc-out', () => PhoneBridge.location.getPermissionStatus()); }
-
-/* ════════════ PhoneBridge.notifications ════════════ */
-// notifications.requestPermission() → { granted, status }
-async function notifPerm() {
-  var r = await run('notif-out', () => PhoneBridge.notifications.requestPermission());
-  if (r) toast(r.granted ? '✅ إذن ممنوح' : '❌ إذن مرفوض');
-}
-
-// notifications.sendLocal({ title, body }) — immediate
-function notifSend() {
-  run('notif-out', () => PhoneBridge.notifications.sendLocal({
-    title: document.getElementById('notif-t').value,
-    body:  document.getElementById('notif-b').value,
-  }));
-}
-
-// notifications.sendLocal({ title, body, delay: 5 }) — delayed 5 seconds
-function notifDelay() {
-  run('notif-out', () => PhoneBridge.notifications.sendLocal({
-    title: document.getElementById('notif-t').value,
-    body:  document.getElementById('notif-b').value,
-    delay: 5,
-  })).then(function(r) { if (r) toast('⏰ الإشعار سيصل خلال 5 ثوانٍ'); });
-}
-
-// notifications.cancelAll()
-function notifCancel() { run('notif-out', () => PhoneBridge.notifications.cancelAll()); }
-
-// notifications.getBadgeCount() → { count }
-function notifBadge() { run('notif-out', () => PhoneBridge.notifications.getBadgeCount()); }
-
-// notifications.setBadgeCount(3)
-function notifSetBadge() { run('notif-out', () => PhoneBridge.notifications.setBadgeCount(3)); }
-
-/* ════════════ browser · deepLink ════════════ */
-// browser.open(url, options)
-function browserOpen() {
-  var url = document.getElementById('browser-url').value.trim();
-  if (!url) { toast('أدخل رابطاً'); return; }
-  run('browser-out', () => PhoneBridge.browser.open(url, { toolbarColor: '#6C63FF' }));
-}
-
-// deepLink.open('https://...') or deepLink.open('instagram://...')
-function deepOpen() {
-  var url = document.getElementById('browser-url').value.trim();
-  if (!url) { toast('أدخل رابطاً'); return; }
-  run('browser-out', () => PhoneBridge.deepLink.open(url));
-}
-
-// deepLink.getInitialURL() → { url }
-function dlInitial() { run('browser-out', () => PhoneBridge.deepLink.getInitialURL()); }
-
-/* ════════════ PhoneBridge.files ════════════ */
-function _fileIcon(m) {
-  if (!m) return '📄';
-  if (m.includes('pdf')) return '📕';
-  if (m.includes('image')) return '🖼️';
-  if (m.includes('video')) return '🎬';
-  if (m.includes('audio')) return '🎵';
-  if (m.includes('word') || m.includes('document')) return '📝';
-  if (m.includes('sheet') || m.includes('excel')) return '📊';
-  if (m.includes('zip') || m.includes('rar')) return '🗜️';
-  return '📄';
-}
-function _showFile(r) {
-  _lastFileUri = r.uri; _lastFileMime = r.mimeType || '*/*';
-  var c = document.getElementById('f-card'); c.classList.add('show');
-  document.getElementById('f-ico').textContent = _fileIcon(r.mimeType);
-  document.getElementById('f-name').textContent = r.name || 'ملف';
-  var sz = r.size ? (r.size < 1048576 ? Math.round(r.size / 1024) + 'KB' : (r.size / 1048576).toFixed(1) + 'MB') : '';
-  document.getElementById('f-meta').textContent = (r.mimeType || '') + (sz ? ' • ' + sz : '');
-}
-
-// files.pickDocument({ type }) → { uri, name, size, mimeType }
-async function filePickAny()  { var r = await run('file-out', () => PhoneBridge.files.pickDocument({ type: '*/*' })); if (r) _showFile(r); }
-async function filePickPDF()  { var r = await run('file-out', () => PhoneBridge.files.pickDocument({ type: 'application/pdf' })); if (r) _showFile(r); }
-async function filePickImg()  { var r = await run('file-out', () => PhoneBridge.files.pickDocument({ type: 'image/*' })); if (r) _showFile(r); }
-async function filePickMulti(){ var r = await run('file-out', () => PhoneBridge.files.pickDocument({ type: '*/*', multiple: true })); if (r) _showFile(r); }
-
-// files.shareDocument(uri, mimeType, title)
-function fileShare() {
-  if (!_lastFileUri) { toast('اختر ملفاً أولاً'); return; }
-  run('file-out', () => PhoneBridge.files.shareDocument(_lastFileUri, _lastFileMime, 'مشاركة ملف'));
-}
-
-// files.download(url, filename) → { uri, status }
-function fileDl() {
-  var url = document.getElementById('dl-url').value.trim();
-  run('file-out', () => PhoneBridge.files.download(url, 'file.pdf'));
-}
-
-/* ════════════ PhoneBridge.share ════════════ */
-// share.text('Hello World!', 'Share Title')
-function shareTxt() { run('share-out', () => PhoneBridge.share.text('مرحباً من PhoneBridge! 🚀', 'PhoneBridge SDK')); }
-
-// share.url('https://example.com', 'Check this out')
-function shareUrl() { run('share-out', () => PhoneBridge.share.url('https://ah-0.github.io/Test-web/', 'جرّب PhoneBridge')); }
-
-// share.file(localFileUri, 'application/pdf')
-function shareFile() {
-  if (_lastFileUri) { run('share-out', () => PhoneBridge.share.file(_lastFileUri, _lastFileMime || '*/*')); }
-  else toast('اختر ملفاً من قسم الملفات أولاً');
-}
-
-/* ════════════ PhoneBridge.biometric ════════════ */
-// biometric.authenticate({ promptMessage, fallbackLabel }) → { success }
-function bioAuth() {
-  run('bio-out', () => PhoneBridge.biometric.authenticate({
-    promptMessage: 'تسجيل الدخول ببصمتك',
-    fallbackLabel: 'استخدام الرمز',
-  }));
-}
-
-// biometric.isAvailable() → { available }
-function bioAvail() { run('bio-out', () => PhoneBridge.biometric.isAvailable()); }
-
-// biometric.getSupportedTypes() → { types }  (1=Fingerprint, 2=FaceID, 3=Iris)
-function bioTypes() { run('bio-out', () => PhoneBridge.biometric.getSupportedTypes()); }
-
-/* ════════════ PhoneBridge.contacts ════════════ */
-// contacts.getAll() → [{ id, name, phones: [], emails: [] }]
-function conAll() {
-  run('con-out', async () => {
-    var r = await PhoneBridge.contacts.getAll();
-    return { total: r.contacts.length, sample: r.contacts.slice(0, 3) };
-  });
-}
-
-// contacts.search('John') → { contacts }
-function conSearch() {
-  var q = document.getElementById('c-q').value.trim();
-  if (!q) { toast('أدخل اسم للبحث'); return; }
-  run('con-out', () => PhoneBridge.contacts.search(q));
-}
-
-/* ════════════ PhoneBridge.calendar ════════════ */
-// calendar.createEvent({ title, startDate, endDate, notes })
-function calCreate() {
-  var now = new Date(), end = new Date(now.getTime() + 3600000);
-  run('cal-out', () => PhoneBridge.calendar.createEvent({
-    title: 'اجتماع PhoneBridge',
-    startDate: now.toISOString(),
-    endDate: end.toISOString(),
-    notes: 'اجتماع مهم',
-  }));
-}
-
-// calendar.getEvents({ startDate, endDate }) → { events }
-function calGet() {
-  var start = new Date(); start.setDate(1);
-  var end = new Date(); end.setMonth(end.getMonth() + 1);
-  run('cal-out', () => PhoneBridge.calendar.getEvents({
-    startDate: start.toISOString(),
-    endDate: end.toISOString(),
-  }));
-}
-
-/* ════════════ PhoneBridge.clipboard ════════════ */
-// clipboard.copy('Hello World')
-function clipCopy() {
-  var t = document.getElementById('clip-t').value;
-  run('clip-out', () => PhoneBridge.clipboard.copy(t))
-    .then(function(r) { if (r) toast('✅ تم النسخ'); });
-}
-
-// clipboard.read() → { text }
-function clipRead() { run('clip-out', () => PhoneBridge.clipboard.read()); }
-
-/* ════════════ PhoneBridge.sms · call · email ════════════ */
-// call.dial('+1234567890')
-function doDial() {
-  var p = document.getElementById('ph').value.trim();
-  if (!p) { toast('أدخل رقم الهاتف'); return; }
-  run('comm-out', () => PhoneBridge.call.dial(p));
-}
-
-// sms.send('+1234567890', 'Hello from PhoneBridge!')
-function doSMS() {
-  var p = document.getElementById('ph').value.trim();
-  if (!p) { toast('أدخل رقم الهاتف'); return; }
-  run('comm-out', () => PhoneBridge.sms.send(p, document.getElementById('sms-b').value));
-}
-
-// email.send({ to, subject, body, cc })
-function doEmail() {
-  run('comm-out', () => PhoneBridge.email.send({
-    to: 'example@email.com',
-    subject: 'رسالة من PhoneBridge',
-    body: 'مرحباً، هذه رسالة تجريبية من PhoneBridge SDK!',
-    cc: '',
-  }));
-}
-
-/* ════════════ PhoneBridge.storage ════════════ */
-// storage.set('userToken', 'abc123') — supports any JSON value
-function stSet() { run('st-out', () => PhoneBridge.storage.set(document.getElementById('s-k').value, document.getElementById('s-v').value)); }
-
-// storage.get('settings') → { value }
-function stGet() { run('st-out', () => PhoneBridge.storage.get(document.getElementById('s-k').value)); }
-
-// storage.remove('userToken')
-function stDel() { run('st-out', () => PhoneBridge.storage.remove(document.getElementById('s-k').value)); }
-
-// storage.getAllKeys() → { keys }
-function stKeys() { run('st-out', () => PhoneBridge.storage.getAllKeys()); }
-
-/* ════════════ PhoneBridge.vibration ════════════ */
-// vibration.vibrate(200) — 200ms
-function vib200() { run('vib-out', () => PhoneBridge.vibration.vibrate(200)); toast('📳 200ms'); }
-
-// vibration.vibrate([wait, vibrate, wait, vibrate])
-function vibPat() { run('vib-out', () => PhoneBridge.vibration.vibrate([0, 200, 100, 200])); toast('〰️ pattern'); }
-
-// vibration.impact('light' | 'medium' | 'heavy') — haptic feedback
-function vibImpL() { run('vib-out', () => PhoneBridge.vibration.impact('light'));  toast('🤏 light'); }
-function vibImpM() { run('vib-out', () => PhoneBridge.vibration.impact('medium')); toast('👊 medium'); }
-function vibImpH() { run('vib-out', () => PhoneBridge.vibration.impact('heavy'));  toast('💥 heavy'); }
-
-/* ════════════ PhoneBridge.audio ════════════ */
-// audio.record({ quality: 'high' })
-function audRec()  { run('aud-out', () => PhoneBridge.audio.record({ quality: 'high' })); }
-
-// audio.stop()
-function audStop() { run('aud-out', () => PhoneBridge.audio.stop()); }
-
-// audio.play('file:///path/to/audio.m4a')
-function audPlay() { run('aud-out', () => PhoneBridge.audio.play(document.getElementById('aud-uri').value)); }
-
-// audio.pause()
-function audPause() { run('aud-out', () => PhoneBridge.audio.pause()); }
-
-/* ════════════ PhoneBridge.sensors ════════════ */
-// sensors.getAccelerometer() → { x, y, z }
-function sensAccel() { run('sens-out', () => PhoneBridge.sensors.getAccelerometer()); }
-
-// sensors.getGyroscope() → { x, y, z }
-function sensGyro()  { run('sens-out', () => PhoneBridge.sensors.getGyroscope()); }
-
-// sensors.getCompass() → { magHeading, trueHeading, accuracy }
-function sensComp()  { run('sens-out', () => PhoneBridge.sensors.getCompass()); }
-
-// sensors.getBarometer() → { pressure, relativeAltitude }
-function sensBar()   { run('sens-out', () => PhoneBridge.sensors.getBarometer()); }
-
-// sensors.watchAccelerometer(100) + PhoneBridge.on('sensors.accelerometer', callback)
-function sensWatch() {
-  run('sens-out', () => PhoneBridge.sensors.watchAccelerometer(100));
-  var bar = document.getElementById('sens-live');
-  bar.classList.add('show');
-  _accelUnsub = PhoneBridge.on('sensors.accelerometer', function(data) {
-    bar.textContent =
-      'x: ' + (data.x || 0).toFixed(4) +
-      ' | y: ' + (data.y || 0).toFixed(4) +
-      ' | z: ' + (data.z || 0).toFixed(4);
-  });
-  toast('▶️ watchAccelerometer(100ms)...');
-}
-
-// sensors.stopAccelerometer()
-function sensStop() {
-  run('sens-out', () => PhoneBridge.sensors.stopAccelerometer());
-  if (_accelUnsub) { _accelUnsub(); _accelUnsub = null; }
-  document.getElementById('sens-live').classList.remove('show');
-}
-
-/* ════════════ PhoneBridge.network ════════════ */
-// network.getStatus() → { isConnected, isInternetReachable, type }
-function netStatus() { run('net-out', () => PhoneBridge.network.getStatus()); }
-
-// network.isConnected() → { connected }
-function netConn()   { run('net-out', () => PhoneBridge.network.isConnected()); }
-
-// network.getType() → { type }  (WIFI, CELLULAR, NONE, etc.)
-function netType()   { run('net-out', () => PhoneBridge.network.getType()); }
-
-/* ════════════ PhoneBridge.app ════════════ */
-// app.getInfo() → { name, version, platform, sdkVersion }
-function appInfo()    { run('app-out', () => PhoneBridge.app.getInfo()); }
-
-// app.openSettings()
-function appSettings(){ run('app-out', () => PhoneBridge.app.openSettings()); }
-
-// app.keepScreenAwake(true)
-function appAwake() {
-  run('app-out', () => PhoneBridge.app.keepScreenAwake(true))
-    .then(function(r) { if (r) toast('💡 الشاشة ستبقى مضاءة'); });
-}
-
-/* ════════════ PhoneBridge.bluetooth · nfc ════════════ */
-// bluetooth.isEnabled() → { available: false, reason: "Requires native build" }
-function btCheck()  { run('bt-out', () => PhoneBridge.bluetooth.isEnabled()); }
-
-// nfc.isAvailable() → { available }
-function nfcCheck() { run('bt-out', () => PhoneBridge.nfc.isAvailable()); }
+  var Bridge = {
+    isAndroid: isAndroid, hasNativeBridge: !!NB,
+    getDeviceInfo: function(){ if(NB){try{return JSON.parse(NB.getDeviceInfo());}catch(e){}} return{manufacturer:'Web Browser',model:navigator.userAgent,brand:'N/A',version:0,release:'N/A',package:location.hostname}; },
+    showToast: function(msg){ if(NB){NB.showToast(String(msg));return;} _webToast(msg); },
+    showNotification: function(title,body,ch,id){ ch=ch||'default';id=id!==undefined?id:1; if(NB){NB.showNotification(ch,String(title),String(body),id);return;} if('Notification'in global)Notification.requestPermission().then(function(p){if(p==='granted')new Notification(title,{body:body});}); },
+    shareText: function(text,title){ title=title||'مشاركة'; if(NB){NB.shareText(String(title),String(text));return;} if(navigator.share){navigator.share({title:title,text:text}).catch(function(){});return;} _webToast('المشاركة غير مدعومة'); },
+    shareImage: function(imgPath,title){ title=title||'مشاركة صورة'; if(NB){NB.shareImage(String(title),String(imgPath));return;} _webToast('مشاركة الصور تعمل داخل التطبيق فقط'); },
+    copyToClipboard: function(text,label){ label=label||'نص'; if(NB)return NB.copyToClipboard(String(label),String(text)); if(navigator.clipboard){navigator.clipboard.writeText(text).catch(function(){});return true;} try{var ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;opacity:0;left:-9999px';document.body.appendChild(ta);ta.select();var ok=document.execCommand('copy');document.body.removeChild(ta);return ok;}catch(e){return false;} },
+    getClipboardText: function(){ if(NB)return NB.getClipboardText(); return ''; },
+    vibrate: function(ms){ ms=ms!==undefined?ms:200; if(NB){NB.vibrate(ms);return;} if(navigator.vibrate)navigator.vibrate(ms); },
+    isNetworkAvailable: function(){ if(NB)return NB.isNetworkAvailable(); return navigator.onLine; },
+    openUrl: function(url){ if(NB){NB.openUrl(String(url));return;} global.open(url,'_blank'); },
+    openFileManager: function(mt){ mt=mt||'*/*'; if(NB){NB.openFileManager(String(mt));return;} var i=document.createElement('input');i.type='file';if(mt!=='*/*')i.accept=mt;i.click(); },
+    openCamera: function(){ if(NB){NB.openCamera();return;} var i=document.createElement('input');i.type='file';i.accept='image/*';i.capture='environment';i.click(); },
+    sendEmail: function(to,sub,body){ if(NB){NB.sendEmail(String(to),String(sub),String(body));return;} global.open('mailto:'+to+'?subject='+encodeURIComponent(sub)+'&body='+encodeURIComponent(body)); },
+    makeCall: function(ph){ if(NB){NB.makeCall(String(ph));return;} global.open('tel:'+ph); },
+    openWhatsApp: function(ph,msg){ if(NB){NB.openWhatsApp(String(ph),String(msg||''));return;} global.open('https://wa.me/'+ph+'?text='+encodeURIComponent(msg||''),'_blank'); },
+    getWebViewString: function(){ if(AI)return AI.getWebViewString(); if(KOD)return KOD.getWebViewString(); return''; },
+    setWebViewString: function(v){ if(AI){AI.setWebViewString(String(v));return;} if(KOD)KOD.setWebViewString(String(v)); },
+    evaluateJS: function(s){ if(NB){NB.evaluateJS(String(s));return;} try{eval(s);}catch(e){console.error(e);} },
+    _callbacks:{}, _cbCounter:0,
+    registerCallback: function(fn){ var id='cb_'+(++this._cbCounter)+'_'+Date.now();this._callbacks[id]=fn;global._nbCallbacks=this._callbacks;return id; },
+    unregisterCallback: function(id){ delete this._callbacks[id]; }
+  };
+
+  global.AndroidBridge = Bridge;
+  global.AB = Bridge;
+  if(isAndroid) setTimeout(function(){ Bridge.vibrate(30); }, 600);
+  console.log('%c[AndroidBridge] %cجاهز | Android='+isAndroid+' | NativeBridge='+!!NB,'color:#6c63ff;font-weight:bold','color:inherit');
+})(typeof globalThis!=='undefined'?globalThis:window);
 </script>
 
+<script>
+/* ════ كود الصفحة التجريبية ════ */
+var AB = window.AndroidBridge;
+
+/* ── تحديث شريط الحالة ─────────────────────── */
+(function initStatus(){
+  var dot  = document.getElementById('statusDot');
+  var text = document.getElementById('statusText');
+  if (AB.hasNativeBridge) {
+    dot.className = 'dot green';
+    text.innerHTML = '✅ NativeBridge نشط — ميزات الهاتف الكاملة متاحة <span class="badge android">Android</span>';
+  } else if (AB.isAndroid) {
+    dot.className = 'dot orange';
+    text.innerHTML = '⚠️ AppInventor Bridge فقط — بعض الميزات محدودة <span class="badge android">Kodular</span>';
+  } else {
+    dot.className = 'dot red';
+    text.innerHTML = '🖥️ متصفح عادي — وضع التجريب على الويب <span class="badge web">Browser</span>';
+  }
+})();
+
+/* ── دوال الصفحة ────────────────────────────── */
+function showDeviceInfo() {
+  var info = AB.getDeviceInfo();
+  document.getElementById('deviceInfo').textContent =
+    JSON.stringify(info, null, 2);
+}
+
+function checkNetwork() {
+  var ok = AB.isNetworkAvailable();
+  AB.showToast(ok ? '✅ الشبكة متصلة' : '❌ لا يوجد اتصال');
+  document.getElementById('deviceInfo').textContent =
+    'حالة الشبكة: ' + (ok ? 'متصل ✅' : 'غير متصل ❌');
+}
+
+function sendNotif() {
+  AB.showNotification(
+    '🔔 إشعار تجريبي',
+    'هذا إشعار من موقعك عبر NativeBridge',
+    'bridge_channel',
+    Math.floor(Math.random() * 1000)
+  );
+  AB.showToast('تم إرسال الإشعار!');
+}
+
+function doShareText() {
+  var txt = document.getElementById('shareText').value.trim();
+  if (!txt) { AB.showToast('أدخل نصاً أولاً'); return; }
+  AB.shareText(txt, 'مشاركة من الموقع');
+}
+
+function doCopyText() {
+  var txt = document.getElementById('shareText').value.trim();
+  if (!txt) { AB.showToast('أدخل نصاً أولاً'); return; }
+  var ok = AB.copyToClipboard(txt, 'نص مشترك');
+  AB.showToast(ok ? '✅ تم النسخ للحافظة!' : '❌ فشل النسخ');
+}
+
+function doShareImage() {
+  var p = document.getElementById('imagePath').value.trim();
+  if (!p) { AB.showToast('أدخل مسار الصورة'); return; }
+  AB.shareImage(p, 'صورة من التطبيق');
+}
+
+function readClipboard() {
+  var txt = AB.getClipboardText();
+  document.getElementById('clipboardOut').textContent =
+    txt || '(الحافظة فارغة أو غير مدعومة في المتصفح)';
+}
+
+function doSendEmail() {
+  var to  = document.getElementById('emailTo').value.trim();
+  var sub = document.getElementById('emailSubject').value.trim();
+  var bod = document.getElementById('emailBody').value.trim();
+  if (!to) { AB.showToast('أدخل البريد الإلكتروني'); return; }
+  AB.sendEmail(to, sub || 'رسالة من التطبيق', bod || '');
+}
+
+function runCode() {
+  var code = document.getElementById('jsCode').value;
+  var out  = document.getElementById('jsOutput');
+  try {
+    var result = eval(code);
+    out.textContent = result !== undefined ? String(result) : '✅ تم التنفيذ بنجاح (بدون قيمة مُرجعة)';
+  } catch (e) {
+    out.textContent = '❌ خطأ: ' + e.message;
+  }
+}
+</script>
 </body>
 </html>
