@@ -1,1 +1,1041 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>PhoneBridge - موقعي</title>
+  <style>
+    :root {
+      --primary: #6C63FF;
+      --primary-dark: #5548D9;
+      --success: #22C55E;
+      --danger: #EF4444;
+      --warning: #F59E0B;
+      --bg: #0F0F1A;
+      --card: #1A1A2E;
+      --card2: #16213E;
+      --text: #E2E8F0;
+      --text-muted: #94A3B8;
+      --border: rgba(108,99,255,0.2);
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, #1A1A2E 0%, #16213E 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 18px 20px 14px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(20px);
+    }
+    .header h1 {
+      font-size: 20px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #6C63FF, #A78BFA);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .header p { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+    .status-bar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+    .badge {
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+    .badge-green { background: rgba(34,197,94,0.15); color: #22C55E; border: 1px solid rgba(34,197,94,0.3); }
+    .badge-purple { background: rgba(108,99,255,0.15); color: #A78BFA; border: 1px solid rgba(108,99,255,0.3); }
+    .badge-red { background: rgba(239,68,68,0.15); color: #EF4444; border: 1px solid rgba(239,68,68,0.3); }
+    .badge-yellow { background: rgba(245,158,11,0.15); color: #F59E0B; border: 1px solid rgba(245,158,11,0.3); }
+
+    /* ── Layout ── */
+    .container { padding: 16px; max-width: 600px; margin: 0 auto; }
+
+    /* ── Section ── */
+    .section { margin-bottom: 20px; }
+    .section-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 10px;
+    }
+
+    /* ── Result box ── */
+    .result-box {
+      background: #0D0D1A;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 12px;
+      font-family: 'Courier New', monospace;
+      color: #A78BFA;
+      min-height: 40px;
+      word-break: break-all;
+      margin-top: 10px;
+      white-space: pre-wrap;
+      display: none;
+    }
+    .result-box.visible { display: block; }
+    .result-box.success { color: #22C55E; border-color: rgba(34,197,94,0.3); }
+    .result-box.error { color: #EF4444; border-color: rgba(239,68,68,0.3); }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn:active { transform: scale(0.96); }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-success { background: rgba(34,197,94,0.15); color: #22C55E; border: 1px solid rgba(34,197,94,0.3); }
+    .btn-danger { background: rgba(239,68,68,0.15); color: #EF4444; border: 1px solid rgba(239,68,68,0.3); }
+    .btn-warning { background: rgba(245,158,11,0.15); color: #F59E0B; border: 1px solid rgba(245,158,11,0.3); }
+    .btn-secondary { background: rgba(148,163,184,0.1); color: var(--text-muted); border: 1px solid var(--border); }
+    .btn-sm { padding: 7px 14px; font-size: 13px; }
+    .btn-block { width: 100%; }
+
+    .btn-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .btn-grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    /* ── Input ── */
+    .input {
+      width: 100%;
+      background: #0D0D1A;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: var(--text);
+      font-size: 14px;
+      margin-top: 8px;
+      outline: none;
+      direction: ltr;
+    }
+    .input:focus { border-color: var(--primary); }
+    .input-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 10px;
+      display: block;
+    }
+
+    /* ── Feature icon ── */
+    .feature-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .feature-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .feature-title { font-size: 15px; font-weight: 700; }
+    .feature-desc { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+
+    /* ── Progress / spinner ── */
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Toast ── */
+    #toast-container {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      pointer-events: none;
+    }
+    .toast {
+      background: #1E1E3A;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 20px;
+      border-radius: 30px;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      animation: slideUp 0.3s ease;
+      white-space: nowrap;
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Divider ── */
+    hr { border: none; border-top: 1px solid var(--border); margin: 10px 0; }
+
+    /* ── Image preview ── */
+    .img-preview {
+      width: 100%;
+      border-radius: 10px;
+      margin-top: 10px;
+      display: none;
+      max-height: 200px;
+      object-fit: cover;
+    }
+    .img-preview.visible { display: block; }
+
+    /* ── Location map link ── */
+    .map-link {
+      color: var(--primary);
+      text-decoration: none;
+      font-size: 13px;
+    }
+    .map-link:hover { text-decoration: underline; }
+
+    /* ── No bridge warning ── */
+    .no-bridge-banner {
+      background: rgba(245,158,11,0.1);
+      border: 1px solid rgba(245,158,11,0.3);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      margin-bottom: 16px;
+      font-size: 13px;
+      color: #F59E0B;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<div class="header">
+  <h1>⚡ PhoneBridge</h1>
+  <p>موقع متكامل مع ميزات الهاتف</p>
+  <div class="status-bar">
+    <span class="badge badge-purple" id="bridge-status">⏳ جاري الاتصال...</span>
+    <span class="badge badge-green" id="network-status">🌐 متصل</span>
+    <span class="badge badge-yellow" id="platform-badge">📱 ويب</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- No-bridge warning -->
+  <div class="no-bridge-banner" id="no-bridge-banner">
+    ⚠️ لم يتم اكتشاف تطبيق PhoneBridge. بعض الميزات تتطلب تشغيل الموقع داخل التطبيق.
+  </div>
+
+  <!-- ══════════════════════════════════════ -->
+  <!-- 1. معلومات الجهاز -->
+  <!-- ══════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">📱 الجهاز والبطارية</div>
+    <div class="card">
+      <div class="feature-header">
+        <div class="feature-icon" style="background:rgba(108,99,255,0.15)">📱</div>
+        <div>
+          <div class="feature-title">معلومات الجهاز</div>
+          <div class="feature-desc">النظام، الموديل، الذاكرة</div>
+        </div>
+      </div>
+      <div class="btn-grid">
+        <button class="btn btn-primary btn-sm" onclick="getDeviceInfo()">🔍 معلومات الجهاز</button>
+        <button class="btn btn-warning btn-sm" onclick="getBattery()">🔋 مستوى البطارية</button>
+      </div>
+      <div class="result-box" id="device-result"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════ -->
+  <!-- 2. الكاميرا والصور -->
+  <!-- ══════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">📸 الكاميرا والمعرض</div>
+    <div class="card">
+      <div class="feature-header">
+        <div class="feature-icon" style="background:rgba(239,68,68,0.15)">📷</div>
+        <div>
+          <div class="feature-title">الكاميرا</div>
+          <div class="feature-desc">التقاط صور وتسجيل فيديو</div>
+        </div>
+      </div>
+      <div class="btn-grid">
+        <button class="btn btn-danger btn-sm" onclick="takePhoto()">📸 التقاط صورة</button>
+        <button class="btn btn-danger btn-sm" onclick="recordVideo()">🎥 تسجيل فيديو</button>
+      </div>
+      <hr />
+      <div class="feature-header" style="margin-bottom:4px">
+        <div class="feature-icon" style="background:rgba(34,197,94,0.15)">🖼️</div>
+        <div>
+          <div class="feature-title">المعرض</div>
+          <div class="feature-desc">اختيار صور ومقاطع</div>
+        </div>
+      </div>
+      <div class="btn-grid-3" style="margin-top:8px">
+        <button class="btn btn-success btn-sm" onclick="pickImage()">🖼️ صورة</button>
+        <button class="btn btn-success btn-sm" onclick="pickVideo()">🎬 فيديو</button>
+        <button class="btn btn-success btn-sm" onclick="pickMultiple()">📚 متعدد</button>
+      </div>
+      <img class="img-preview" id="media-preview" />
+      <div class="result-box" id="camera-result"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════ -->
+  <!-- 3. الموقع الجغرافي -->
+  <!-- ══════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">📍 الموقع الجغرافي</div>
+    <div class="card">
+      <div class="feature-header">
+        <div class="feature-icon" style="background:rgba(34,197,94,0.15)">📍</div>
+        <div>
+          <div class="feature-title">الموقع الحالي</div>
+          <div class="feature-desc">خط العرض، خط الطول، الدقة</div>
+        </div>
+      </div>
+      <div class="btn-grid">
+        <button class="btn btn-success btn-sm" onclick="getLocation()">📍 الموقع الآن</button>
+        <button class="btn btn-secondary btn-sm" onclick="checkLocationPerm()">🔐 حالة الإذن</button>
+      </div>
+      <div class="result-box" id="location-result"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════ -->
+  <!-- 4. الإشعارات -->
+  <!-- ══════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">🔔 الإشعارات</div>
+    <div class="card">
+      <div class="feature-header">
+        <div class="feature-icon" style="background:rgba(245,158,11,0.15)">🔔</div>
+        <div>
+          <div class="feature-title">الإشعارات المحلية</div>
+          <div class="feature-desc">إرسال إشعار فوري أو مجدول</div>
+        </div>
+      </div>
+      <label class="input-label">عنوان الإشعار</label>
+      <input type="text" class="input" id="notif-title" value="مرحباً من موقعي!" />
+      <label class="input-label">نص الإشعار</label>
+      <input type="text" class="input" id="notif-body" value="هذا إشعار تجريبي من PhoneBridge" />
+      <div class="btn-grid" style="margin-top:10px">
+        <button class="btn btn-warning btn-sm" onclick="sendNotif()">📤 إرسال الآن</button>
+        <button class="btn btn-secondary btn-sm" onclick="sendNotifDelayed()">⏰ بعد 5 ثوانٍ</button>
+      </div>
+      <div class="result-box" id="notif-result"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════ -->
+  <!-- 5. البيومتري والأمان -->
+  <!-- ══════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">🔒 البيومتري والأمان</div>
+    <div class="card">
+      <div class="feature-header">
+        <div class="feature-icon" style="background:rgba(108,99,255,0.15)">🔒</div>
+        <div>
+          <div class="feature-title">البصمة / الوجه</div>
+          <div class="feature-desc">التحقق البيومتري</div>
+        </div>
+      </div>
+      <div class="btn-grid">
+        <button class="btn btn-primary btn-sm" onclick="biometricAuth()">🔓 تسجيل الدخول</button>
+        <button class="btn btn-secondary btn-sm" onclick="checkBiometric()">✅ فحص التوفر</button>
+      </div>
+      <div class="result-box" id="biometric-result"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════ -->
+  <!-- 6. جهات الاتصال -->
+  <!-- ══════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">👥 جهات الاتصال</div>
+    <div class="card">
+      <div class="feature-header">
+        <div class="feature-icon" style="background:rgba(34,197,94,0.15)">👤</div>
+        <div>
+          <div class="feature-title">دليل الهاتف</div>
+          <div class="feature-desc">قراءة وبحث في جهات الاتصال</div>
+        </div>
+      </div>
+      <label class="input-label">بحث باسم جهة الاتصال</label>
+      <input type="text" class="input" id="contact-search" placeholder="أدخل اسم..." />
+      <div class="btn-grid" style="margin-top:10px">
+        <button class="btn btn-success btn-sm" onclick="getAllContacts()">📋 كل جهات الاتصال</button>
+        <button class="btn btn-secondary btn-sm" onclick="searchContact()">🔍 بحث</button>
+      </div>
+      <div class="result-box" id="contacts-result"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════ -->
+  <!-- 7. الحافظة والمشاركة -->
+  <!-- ══════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">📋 الحافظة والمشاركة</div>
+    <div class="card">
+      <div class="feature-header">
+        <div class="feature-icon" style="background:rgba(108,99,255,0.15)">📋</div>
+        <div>
+          <div class="feature-title">الحافظة</div>
+          <div class="feature-desc">نسخ ولصق النصوص</div>
+        </div>
+      </div>
+      <label class="input-label">نص للنسخ</label>
+      <input type="text" class="input" id="clipboard-text" value="نص منسوخ من PhoneBridge 🚀" />
+      <div class="btn-grid" style="margin-top:8px">
+        <button class="btn btn-primary btn-sm" onclick="copyText()">📋 نسخ</button>
+        <button class="btn btn-secondary btn-sm" onclick="readClipboard()">📄 لصق / قراءة</button>
+      </div>
+      <hr />
+      <div class="feature-header" style="margin-bottom:4px">
+        <div class="feature-icon" style="background:rgba(34,197,94,0.15)">🔗</div>
+        <div><div class="feature-title">مشاركة</div></div>
+      </div>
+      <div class="btn-grid-3" style="margin-top:8px">
+        <button class="btn btn-success btn-sm" onclick="shareText()">📝 نص</button>
+        <button class="btn btn-success btn-sm" onclick="shareUrl()">🔗 رابط</button>
+        <button class="btn btn-success btn-sm" onclick="shareApp()">📱 التطبيق</button>
+      </div>
+      <div class="result-box" id="clipboard-result"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════ -->
+  <!-- 8. الاتصالات -->
+  <!-- ══════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">📞 الاتصالات والرسائل</div>
+    <div class="card">
+      <div class="feature-header">
+        <div class="feature-icon" style="background:rgba(34,197,94,0.15)">📞</div>
+        <div>
+          <div class="feature-title">اتصال، رسالة، بريد</div>
+          <div class="feature-desc">فتح تطبيقات الاتصال</div>
+        </div>
+      </div>
+      <label class="input-label">رقم الهاتف</label>
+      <input type="tel" class="input" id="phone-number" placeholder="05xxxxxxxx" />
+      <label class="input-label">نص الرسالة</label>
+      <input type="text" class="input" id="sms-body" value="مرحباً من تطبيق PhoneBridge!" />
+      <div class="btn-grid-3" style="margin-top:10px">
+        <button class="btn btn-success btn-sm" onclick="dialPhone()">📞 اتصال</button>
+        <button class="btn btn-primary btn-sm" onclick="sendSMS()">💬 رسالة</button>
+        <button class="btn btn-warning btn-sm" onclick="sendEmail()">📧 بريد</button>
+      </div>
+      <div class="result-box" id="comm-result"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════ -->
+  <!-- 9. الاهتزاز والحساسيات -->
+  <!-- ══════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">📳 الاهتزاز والحساسيات</div>
+    <div class="card">
+      <div class="feature-header">
+        <div class="feature-icon" style="background:rgba(245,158,11,0.15)">📳</div>
+        <div>
+          <div class="feature-title">الاهتزاز</div>
+        </div>
+      </div>
+      <div class="btn-grid-3">
+        <button class="btn btn-warning btn-sm" onclick="vibrateLight()">🤏 خفيف</button>
+        <button class="btn btn-warning btn-sm" onclick="vibrateMedium()">👊 متوسط</button>
+        <button class="btn btn-warning btn-sm" onclick="vibrateHeavy()">💥 قوي</button>
+      </div>
+      <hr />
+      <div class="feature-header" style="margin-bottom:4px">
+        <div class="feature-icon" style="background:rgba(108,99,255,0.15)">🧭</div>
+        <div><div class="feature-title">الحساسيات</div><div class="feature-desc">مقياس التسارع، الجيروسكوب، البوصلة</div></div>
+      </div>
+      <div class="btn-grid-3" style="margin-top:8px">
+        <button class="btn btn-primary btn-sm" onclick="getAccel()">📐 تسارع</button>
+        <button class="btn btn-primary btn-sm" onclick="getGyro()">🌀 جيروسكوب</button>
+        <button class="btn btn-primary btn-sm" onclick="getCompass()">🧭 بوصلة</button>
+      </div>
+      <div class="result-box" id="sensors-result"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════ -->
+  <!-- 10. التخزين المحلي -->
+  <!-- ══════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">💾 التخزين المحلي</div>
+    <div class="card">
+      <div class="feature-header">
+        <div class="feature-icon" style="background:rgba(34,197,94,0.15)">💾</div>
+        <div>
+          <div class="feature-title">حفظ واسترجاع البيانات</div>
+          <div class="feature-desc">بيانات تُحفظ داخل التطبيق</div>
+        </div>
+      </div>
+      <div class="btn-grid">
+        <div>
+          <label class="input-label">المفتاح</label>
+          <input type="text" class="input" id="storage-key" value="myKey" />
+        </div>
+        <div>
+          <label class="input-label">القيمة</label>
+          <input type="text" class="input" id="storage-value" value="مرحباً!" />
+        </div>
+      </div>
+      <div class="btn-grid-3" style="margin-top:10px">
+        <button class="btn btn-success btn-sm" onclick="storageSave()">💾 حفظ</button>
+        <button class="btn btn-primary btn-sm" onclick="storageLoad()">📂 تحميل</button>
+        <button class="btn btn-danger btn-sm" onclick="storageDelete()">🗑️ حذف</button>
+      </div>
+      <div class="result-box" id="storage-result"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════ -->
+  <!-- 11. الشبكة -->
+  <!-- ══════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">🌐 الشبكة</div>
+    <div class="card">
+      <div class="feature-header">
+        <div class="feature-icon" style="background:rgba(108,99,255,0.15)">🌐</div>
+        <div>
+          <div class="feature-title">حالة الاتصال</div>
+          <div class="feature-desc">WiFi، بيانات، نوع الشبكة</div>
+        </div>
+      </div>
+      <div class="btn-grid">
+        <button class="btn btn-primary btn-sm" onclick="getNetworkStatus()">📶 حالة الشبكة</button>
+        <button class="btn btn-secondary btn-sm" onclick="getNetworkType()">🔍 نوع الشبكة</button>
+      </div>
+      <div class="result-box" id="network-result"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════ -->
+  <!-- 12. إعدادات التطبيق -->
+  <!-- ══════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">⚙️ إعدادات التطبيق</div>
+    <div class="card">
+      <div class="feature-header">
+        <div class="feature-icon" style="background:rgba(148,163,184,0.15)">⚙️</div>
+        <div>
+          <div class="feature-title">التحكم في التطبيق</div>
+        </div>
+      </div>
+      <div class="btn-grid-3">
+        <button class="btn btn-secondary btn-sm" onclick="openSettings()">⚙️ الإعدادات</button>
+        <button class="btn btn-secondary btn-sm" onclick="getAppInfo()">ℹ️ معلومات</button>
+        <button class="btn btn-secondary btn-sm" onclick="keepAwake()">💡 إبقاء مضاءً</button>
+      </div>
+      <div class="result-box" id="app-result"></div>
+    </div>
+  </div>
+
+  <div style="height: 40px;"></div>
+</div>
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- PhoneBridge SDK (للتشغيل خارج التطبيق أيضاً) -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<script>
+/* ─────────────────────────────────────────
+   PhoneBridge Client SDK
+   يعمل داخل التطبيق وخارجه
+───────────────────────────────────────── */
+(function() {
+  'use strict';
+  if (window.__PhoneBridgeInjected) return;
+  window.__PhoneBridgeInjected = true;
+
+  var _pendingCalls = {};
+  var _callCounter = 0;
+  var _eventListeners = {};
+
+  function _generateCallId() {
+    return 'pb_' + (++_callCounter) + '_' + Date.now();
+  }
+
+  function _postToNative(payload) {
+    try {
+      if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify(payload));
+      } else {
+        console.warn('[PhoneBridge] ReactNativeWebView not available — running in browser mode');
+      }
+    } catch (e) {
+      console.error('[PhoneBridge] postMessage failed:', e);
+    }
+  }
+
+  function _call(action, args) {
+    return new Promise(function(resolve, reject) {
+      if (!window.ReactNativeWebView) {
+        reject(new Error('PhoneBridge غير متاح. الرجاء فتح الموقع داخل تطبيق PhoneBridge'));
+        return;
+      }
+      var callId = _generateCallId();
+      _pendingCalls[callId] = { resolve: resolve, reject: reject };
+      _postToNative({ type: 'PHONEBRIDGE_CALL', callId: callId, action: action, args: args || {} });
+      setTimeout(function() {
+        if (_pendingCalls[callId]) {
+          delete _pendingCalls[callId];
+          reject(new Error('انتهت مهلة الاستجابة: ' + action));
+        }
+      }, 30000);
+    });
+  }
+
+  function _handleNativeMessage(event) {
+    try {
+      var data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+      if (!data || data.type !== 'PHONEBRIDGE_RESPONSE') return;
+      if (data.callId && _pendingCalls[data.callId]) {
+        var pending = _pendingCalls[data.callId];
+        delete _pendingCalls[data.callId];
+        if (data.success) { pending.resolve(data.data); }
+        else { pending.reject(new Error(data.error || 'خطأ غير معروف')); }
+        return;
+      }
+      if (data.event && _eventListeners[data.event]) {
+        _eventListeners[data.event].forEach(function(cb) { try { cb(data.data); } catch(e) {} });
+      }
+    } catch (e) {}
+  }
+
+  window.addEventListener('message', _handleNativeMessage);
+  document.addEventListener('message', _handleNativeMessage);
+
+  window.PhoneBridge = {
+    _version: '1.0.0',
+    _available: function() { return !!window.ReactNativeWebView; },
+    on: function(event, callback) {
+      if (!_eventListeners[event]) _eventListeners[event] = [];
+      _eventListeners[event].push(callback);
+      return function() { _eventListeners[event] = _eventListeners[event].filter(function(cb) { return cb !== callback; }); };
+    },
+    device: {
+      getInfo: function() { return _call('device.getInfo'); },
+      getBatteryLevel: function() { return _call('device.getBatteryLevel'); },
+      isCharging: function() { return _call('device.isCharging'); }
+    },
+    camera: {
+      capture: function(opts) { return _call('camera.capture', opts); },
+      recordVideo: function(opts) { return _call('camera.recordVideo', opts); }
+    },
+    gallery: {
+      pickImage: function(opts) { return _call('gallery.pickImage', opts); },
+      pickVideo: function(opts) { return _call('gallery.pickVideo', opts); },
+      pickMultiple: function(opts) { return _call('gallery.pickMultiple', opts); }
+    },
+    location: {
+      getCurrent: function(opts) { return _call('location.getCurrent', opts); },
+      watch: function(opts) { return _call('location.watch', opts); },
+      stopWatch: function() { return _call('location.stopWatch'); },
+      getPermissionStatus: function() { return _call('location.getPermissionStatus'); }
+    },
+    files: {
+      download: function(url, filename) { return _call('files.download', { url: url, filename: filename }); },
+      upload: function(opts) { return _call('files.upload', opts); },
+      save: function(opts) { return _call('files.save', opts); },
+      read: function(path) { return _call('files.read', { path: path }); },
+      pick: function(opts) { return _call('files.pick', opts); }
+    },
+    share: {
+      text: function(text, title) { return _call('share.text', { text: text, title: title }); },
+      file: function(uri, mimeType) { return _call('share.file', { uri: uri, mimeType: mimeType }); },
+      url: function(url, title) { return _call('share.url', { url: url, title: title }); }
+    },
+    notifications: {
+      requestPermission: function() { return _call('notifications.requestPermission'); },
+      sendLocal: function(opts) { return _call('notifications.sendLocal', opts); },
+      cancelAll: function() { return _call('notifications.cancelAll'); },
+      getBadgeCount: function() { return _call('notifications.getBadgeCount'); },
+      setBadgeCount: function(count) { return _call('notifications.setBadgeCount', { count: count }); }
+    },
+    biometric: {
+      authenticate: function(opts) { return _call('biometric.authenticate', opts); },
+      isAvailable: function() { return _call('biometric.isAvailable'); },
+      getSupportedTypes: function() { return _call('biometric.getSupportedTypes'); }
+    },
+    contacts: {
+      getAll: function() { return _call('contacts.getAll'); },
+      search: function(query) { return _call('contacts.search', { query: query }); }
+    },
+    calendar: {
+      createEvent: function(opts) { return _call('calendar.createEvent', opts); },
+      getEvents: function(opts) { return _call('calendar.getEvents', opts); }
+    },
+    bluetooth: {
+      scan: function(opts) { return _call('bluetooth.scan', opts); },
+      connect: function(deviceId) { return _call('bluetooth.connect', { deviceId: deviceId }); },
+      disconnect: function(deviceId) { return _call('bluetooth.disconnect', { deviceId: deviceId }); },
+      isEnabled: function() { return _call('bluetooth.isEnabled'); }
+    },
+    nfc: {
+      scan: function(opts) { return _call('nfc.scan', opts); },
+      isAvailable: function() { return _call('nfc.isAvailable'); },
+      write: function(data) { return _call('nfc.write', { data: data }); }
+    },
+    network: {
+      getStatus: function() { return _call('network.getStatus'); },
+      isConnected: function() { return _call('network.isConnected'); },
+      getType: function() { return _call('network.getType'); }
+    },
+    clipboard: {
+      copy: function(text) { return _call('clipboard.copy', { text: text }); },
+      read: function() { return _call('clipboard.read'); }
+    },
+    sms: {
+      send: function(phone, body) { return _call('sms.send', { phone: phone, body: body }); }
+    },
+    call: {
+      dial: function(phone) { return _call('call.dial', { phone: phone }); }
+    },
+    email: {
+      send: function(opts) { return _call('email.send', opts); }
+    },
+    storage: {
+      set: function(key, value) { return _call('storage.set', { key: key, value: value }); },
+      get: function(key) { return _call('storage.get', { key: key }); },
+      remove: function(key) { return _call('storage.remove', { key: key }); },
+      clear: function() { return _call('storage.clear'); },
+      getAllKeys: function() { return _call('storage.getAllKeys'); }
+    },
+    vibration: {
+      vibrate: function(pattern) { return _call('vibration.vibrate', { pattern: pattern }); },
+      impact: function(style) { return _call('vibration.impact', { style: style || 'medium' }); }
+    },
+    audio: {
+      record: function(opts) { return _call('audio.record', opts); },
+      stop: function() { return _call('audio.stop'); },
+      play: function(uri) { return _call('audio.play', { uri: uri }); },
+      pause: function() { return _call('audio.pause'); }
+    },
+    sensors: {
+      getAccelerometer: function() { return _call('sensors.getAccelerometer'); },
+      getGyroscope: function() { return _call('sensors.getGyroscope'); },
+      getCompass: function() { return _call('sensors.getCompass'); },
+      getBarometer: function() { return _call('sensors.getBarometer'); }
+    },
+    deepLink: {
+      open: function(url) { return _call('deepLink.open', { url: url }); },
+      getInitialURL: function() { return _call('deepLink.getInitialURL'); }
+    },
+    app: {
+      getInfo: function() { return _call('app.getInfo'); },
+      openSettings: function() { return _call('app.openSettings'); },
+      minimize: function() { return _call('app.minimize'); },
+      setStatusBarStyle: function(style) { return _call('app.setStatusBarStyle', { style: style }); },
+      setBrightness: function(level) { return _call('app.setBrightness', { level: level }); },
+      keepScreenAwake: function(enabled) { return _call('app.keepScreenAwake', { enabled: enabled }); }
+    }
+  };
+
+  _postToNative({ type: 'PHONEBRIDGE_READY' });
+  if (typeof window.dispatchEvent === 'function') {
+    window.dispatchEvent(new Event('PhoneBridgeReady'));
+  }
+  console.log('[PhoneBridge] SDK v1.0.0 initialized');
+})();
+</script>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- App Logic -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<script>
+/* ── Helpers ── */
+function showResult(id, data, isError) {
+  var el = document.getElementById(id);
+  el.classList.add('visible');
+  el.classList.remove('success', 'error');
+  if (isError) {
+    el.classList.add('error');
+    el.textContent = '❌ ' + (typeof data === 'string' ? data : JSON.stringify(data, null, 2));
+  } else {
+    el.classList.add('success');
+    el.textContent = '✅ ' + (typeof data === 'string' ? data : JSON.stringify(data, null, 2));
+  }
+}
+
+function showToast(msg) {
+  var t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.getElementById('toast-container').appendChild(t);
+  setTimeout(function() { t.remove(); }, 3000);
+}
+
+async function pb(resultId, fn) {
+  try {
+    var data = await fn();
+    showResult(resultId, data, false);
+    return data;
+  } catch (e) {
+    showResult(resultId, e.message, true);
+    showToast('❌ ' + e.message);
+    return null;
+  }
+}
+
+/* ── Init ── */
+window.addEventListener('load', function() {
+  setTimeout(function() {
+    var bridgeBadge = document.getElementById('bridge-status');
+    var banner = document.getElementById('no-bridge-banner');
+    if (window.ReactNativeWebView) {
+      bridgeBadge.textContent = '✅ PhoneBridge متصل';
+      bridgeBadge.className = 'badge badge-green';
+      PhoneBridge.app.getInfo().then(function(info) {
+        document.getElementById('platform-badge').textContent = '📱 ' + (info.platform || 'mobile');
+      }).catch(function() {});
+    } else {
+      bridgeBadge.textContent = '⚠️ وضع المتصفح';
+      bridgeBadge.className = 'badge badge-yellow';
+      banner.style.display = 'block';
+    }
+  }, 800);
+
+  if (!navigator.onLine) {
+    document.getElementById('network-status').textContent = '🔴 غير متصل';
+    document.getElementById('network-status').className = 'badge badge-red';
+  }
+});
+
+/* ══ Device ══ */
+function getDeviceInfo() { pb('device-result', () => PhoneBridge.device.getInfo()); }
+async function getBattery() {
+  var lvl = await pb('device-result', () => PhoneBridge.device.getBatteryLevel());
+  if (lvl) {
+    var chg = await PhoneBridge.device.isCharging().catch(() => ({ charging: false }));
+    showResult('device-result', {
+      level: Math.round(lvl.level * 100) + '%',
+      charging: chg.charging ? '🔌 يشحن' : '🔋 لا يشحن'
+    }, false);
+  }
+}
+
+/* ══ Camera ══ */
+async function takePhoto() {
+  var res = await pb('camera-result', () => PhoneBridge.camera.capture({ quality: 0.8 }));
+  if (res && res.uri) {
+    var img = document.getElementById('media-preview');
+    img.src = res.uri;
+    img.classList.add('visible');
+  }
+}
+async function recordVideo() { pb('camera-result', () => PhoneBridge.camera.recordVideo({ maxDuration: 30 })); }
+async function pickImage() {
+  var res = await pb('camera-result', () => PhoneBridge.gallery.pickImage({ quality: 0.9 }));
+  if (res && res.uri) {
+    var img = document.getElementById('media-preview');
+    img.src = res.uri;
+    img.classList.add('visible');
+  }
+}
+function pickVideo() { pb('camera-result', () => PhoneBridge.gallery.pickVideo()); }
+async function pickMultiple() {
+  var res = await pb('camera-result', () => PhoneBridge.gallery.pickMultiple({ limit: 5 }));
+  if (res && res.assets && res.assets[0]) {
+    var img = document.getElementById('media-preview');
+    img.src = res.assets[0].uri;
+    img.classList.add('visible');
+  }
+}
+
+/* ══ Location ══ */
+async function getLocation() {
+  var res = await pb('location-result', () => PhoneBridge.location.getCurrent());
+  if (res) {
+    var lat = res.latitude.toFixed(6), lng = res.longitude.toFixed(6);
+    document.getElementById('location-result').innerHTML =
+      '✅ خط العرض: ' + lat + ' | خط الطول: ' + lng +
+      '<br/><a class="map-link" href="https://www.google.com/maps?q=' + lat + ',' + lng + '" target="_blank">🗺️ عرض على خرائط Google</a>';
+  }
+}
+function checkLocationPerm() { pb('location-result', () => PhoneBridge.location.getPermissionStatus()); }
+
+/* ══ Notifications ══ */
+async function sendNotif() {
+  await PhoneBridge.notifications.requestPermission().catch(() => {});
+  pb('notif-result', () => PhoneBridge.notifications.sendLocal({
+    title: document.getElementById('notif-title').value,
+    body: document.getElementById('notif-body').value
+  }));
+}
+async function sendNotifDelayed() {
+  await PhoneBridge.notifications.requestPermission().catch(() => {});
+  pb('notif-result', () => PhoneBridge.notifications.sendLocal({
+    title: document.getElementById('notif-title').value,
+    body: document.getElementById('notif-body').value,
+    delay: 5
+  }));
+  showToast('⏰ سيصلك الإشعار خلال 5 ثوانٍ');
+}
+
+/* ══ Biometric ══ */
+function biometricAuth() {
+  pb('biometric-result', () => PhoneBridge.biometric.authenticate({
+    promptMessage: 'تسجيل الدخول ببصمتك',
+    fallbackLabel: 'استخدام الرمز'
+  }));
+}
+function checkBiometric() { pb('biometric-result', () => PhoneBridge.biometric.isAvailable()); }
+
+/* ══ Contacts ══ */
+function getAllContacts() {
+  pb('contacts-result', async () => {
+    var res = await PhoneBridge.contacts.getAll();
+    return { total: res.contacts.length, sample: res.contacts.slice(0, 3) };
+  });
+}
+function searchContact() {
+  var q = document.getElementById('contact-search').value.trim();
+  if (!q) { showToast('الرجاء إدخال اسم للبحث'); return; }
+  pb('contacts-result', () => PhoneBridge.contacts.search(q));
+}
+
+/* ══ Clipboard & Share ══ */
+function copyText() {
+  var text = document.getElementById('clipboard-text').value;
+  pb('clipboard-result', () => PhoneBridge.clipboard.copy(text)).then(function(r) {
+    if (r) showToast('✅ تم النسخ: ' + text);
+  });
+}
+function readClipboard() { pb('clipboard-result', () => PhoneBridge.clipboard.read()); }
+function shareText() {
+  pb('clipboard-result', () => PhoneBridge.share.text('أنا أستخدم PhoneBridge 🚀 جرب الموقع!', 'PhoneBridge'));
+}
+function shareUrl() {
+  pb('clipboard-result', () => PhoneBridge.share.url('https://ah-0.github.io/Test-web/', 'PhoneBridge App'));
+}
+function shareApp() {
+  pb('clipboard-result', () => PhoneBridge.share.text('حمّل تطبيق PhoneBridge وابدأ التجربة:\nhttps://ah-0.github.io/Test-web/', 'شارك التطبيق'));
+}
+
+/* ══ Comm ══ */
+function dialPhone() {
+  var p = document.getElementById('phone-number').value.trim();
+  if (!p) { showToast('أدخل رقم الهاتف'); return; }
+  pb('comm-result', () => PhoneBridge.call.dial(p));
+}
+function sendSMS() {
+  var p = document.getElementById('phone-number').value.trim();
+  var b = document.getElementById('sms-body').value;
+  if (!p) { showToast('أدخل رقم الهاتف'); return; }
+  pb('comm-result', () => PhoneBridge.sms.send(p, b));
+}
+function sendEmail() {
+  pb('comm-result', () => PhoneBridge.email.send({
+    to: 'example@email.com',
+    subject: 'رسالة من PhoneBridge',
+    body: 'مرحباً، هذه رسالة اختبار من تطبيق PhoneBridge!'
+  }));
+}
+
+/* ══ Vibration ══ */
+function vibrateLight()  { pb('sensors-result', () => PhoneBridge.vibration.impact('light'));  showToast('📳 اهتزاز خفيف'); }
+function vibrateMedium() { pb('sensors-result', () => PhoneBridge.vibration.impact('medium')); showToast('📳 اهتزاز متوسط'); }
+function vibrateHeavy()  { pb('sensors-result', () => PhoneBridge.vibration.impact('heavy'));  showToast('📳 اهتزاز قوي'); }
+
+/* ══ Sensors ══ */
+function getAccel()   { pb('sensors-result', () => PhoneBridge.sensors.getAccelerometer()); }
+function getGyro()    { pb('sensors-result', () => PhoneBridge.sensors.getGyroscope()); }
+function getCompass() { pb('sensors-result', () => PhoneBridge.sensors.getCompass()); }
+
+/* ══ Storage ══ */
+function storageSave()   {
+  var k = document.getElementById('storage-key').value;
+  var v = document.getElementById('storage-value').value;
+  pb('storage-result', () => PhoneBridge.storage.set(k, v));
+}
+function storageLoad()   { pb('storage-result', () => PhoneBridge.storage.get(document.getElementById('storage-key').value)); }
+function storageDelete() { pb('storage-result', () => PhoneBridge.storage.remove(document.getElementById('storage-key').value)); }
+
+/* ══ Network ══ */
+function getNetworkStatus() { pb('network-result', () => PhoneBridge.network.getStatus()); }
+function getNetworkType()   { pb('network-result', () => PhoneBridge.network.getType()); }
+
+/* ══ App ══ */
+function openSettings() { pb('app-result', () => PhoneBridge.app.openSettings()); }
+function getAppInfo()   { pb('app-result', () => PhoneBridge.app.getInfo()); }
+function keepAwake()    { pb('app-result', () => PhoneBridge.app.keepScreenAwake(true)).then(function(r) { if(r) showToast('💡 الشاشة ستبقى مضاءة'); }); }
+</script>
+
+</body>
+</html>
 
