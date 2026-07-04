@@ -460,7 +460,18 @@ async function renderPDFProgressive(fileId, buffer) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   تحميل الملف مع تتبع التقدم اللحظي
+   تحميل الملف — ثلاث طبقات حسب البيئة
+   ═══════════════════════════════════════════════════════════════════
+
+   الطبقة 1 — Native + CapacitorHttp مفعَّل في capacitor.config.json:
+     fetch() يُوجَّه تلقائياً عبر HTTP النظام ← بدون CORS + شريط تقدم حقيقي
+
+   الطبقة 2 — Native + CapacitorHttp plugin مباشر (احتياطي):
+     CapacitorHttp.request() ← بدون CORS، شريط تقدم تقريبي
+
+   الطبقة 3 — ويب عادي:
+     fetch() مباشر ← يعتمد على CORS headers في الخادم
+
    ═══════════════════════════════════════════════════════════════════ */
 function formatBytes(b) {
   if (b < 1024)    return b + ' B';
@@ -468,7 +479,8 @@ function formatBytes(b) {
   return (b / 1048576).toFixed(1) + ' MB';
 }
 
-async function fetchWithProgress(fileId, url) {
+/* ── الطبقة 1: fetch() مع ستريم — يعمل في native بفضل CapacitorHttp ── */
+async function fetchStreamWithProgress(fileId, url) {
   const response = await fetch(url, { redirect: 'follow' });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
@@ -477,9 +489,8 @@ async function fetchWithProgress(fileId, url) {
 
   const reader = response.body.getReader();
   const chunks = [];
-  let received = 0;
+  let received  = 0;
 
-  /* قراءة الستريم chunk بـ chunk مع تحديث شريط التقدم */
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
@@ -487,7 +498,8 @@ async function fetchWithProgress(fileId, url) {
     received += value.length;
 
     if (total > 0) {
-      setProgress(fileId, (received / total) * 100,
+      setProgress(fileId,
+        (received / total) * 100,
         `جارٍ التحميل… ${formatBytes(received)} / ${formatBytes(total)}`);
     } else {
       setProgress(fileId, 0,
@@ -495,11 +507,41 @@ async function fetchWithProgress(fileId, url) {
     }
   }
 
-  /* دمج الـ chunks في ArrayBuffer واحد */
   const merged = new Uint8Array(received);
   let pos = 0;
   for (const chunk of chunks) { merged.set(chunk, pos); pos += chunk.length; }
   return merged.buffer;
+}
+
+/* ── الطبقة 2: CapacitorHttp plugin مباشرةً — ضامن بدون CORS في native ─ */
+async function capHttpDownload(fileId, url) {
+  const http = CAP('CapacitorHttp');
+  if (!http) throw new Error('CapacitorHttp غير متاح');
+
+  /* شريط تقدم تقريبي لأن CapacitorHttp لا يدعم streaming events */
+  let fake = 0;
+  const fakeTimer = setInterval(() => {
+    fake = Math.min(90, fake + Math.random() * 8);
+    setProgress(fileId, fake, `جارٍ التحميل عبر النظام…`);
+  }, 400);
+
+  let data;
+  try {
+    const resp = await http.request({
+      method:       'GET',
+      url,
+      responseType: 'arraybuffer',
+    });
+    if (resp.status < 200 || resp.status >= 300)
+      throw new Error(`HTTP ${resp.status}`);
+    /* CapacitorHttp يُعيد البيانات الثنائية كـ base64 */
+    data = fromBase64(resp.data);
+  } finally {
+    clearInterval(fakeTimer);
+  }
+
+  setProgress(fileId, 100, `✅ اكتمل التحميل`);
+  return data;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -563,17 +605,47 @@ async function startDownload(fileId) {
     return;
   }
 
-  /* ── 2. تحميل الملف (fetch يعمل بدون CORS في native) ────── */
+  /* ── 2. تحميل الملف بالطبقات الثلاث ───────────────────── */
+  /*
+   *  الطبقة 1: fetch() streaming
+   *    - في native (CapacitorHttp.enabled=true): يُوجَّه عبر HTTP النظام ← بدون CORS
+   *    - في الويب: يعمل إذا كان الخادم يدعم CORS
+   *
+   *  الطبقة 2: CapacitorHttp plugin مباشرةً (احتياطي native فقط)
+   *    - يضمن التحميل بدون CORS حتى لو فشل fetch()
+   *
+   *  الطبقة 3: خطأ واضح للمستخدم
+   */
   let buffer;
+
+  /* — محاولة الطبقة 1 — */
   try {
-    buffer = await fetchWithProgress(fileId, f.downloadUrl);
-  } catch (err) {
-    console.error('Download failed:', err);
-    setProgress(fileId, 0, '❌ فشل التحميل: ' + err.message);
-    setCardState(fileId, 'error', '❌ ' + err.message);
-    fileState[fileId] = 'error';
-    Haptics.error();
-    return;
+    setProgress(fileId, 0, 'جارٍ الاتصال…');
+    buffer = await fetchStreamWithProgress(fileId, f.downloadUrl);
+  } catch (err1) {
+    console.warn('طبقة 1 فشلت (fetch):', err1.message);
+
+    /* — محاولة الطبقة 2 (native فقط) — */
+    if (isNative()) {
+      try {
+        setProgress(fileId, 0, 'جارٍ التحميل عبر النظام…');
+        buffer = await capHttpDownload(fileId, f.downloadUrl);
+      } catch (err2) {
+        console.error('طبقة 2 فشلت (CapacitorHttp):', err2.message);
+        setProgress(fileId, 0, '❌ فشل التحميل');
+        setCardState(fileId, 'error', '❌ تأكد من الاتصال وحاول مجدداً');
+        fileState[fileId] = 'error';
+        Haptics.error();
+        return;
+      }
+    } else {
+      /* ويب: CORS يمنع التحميل */
+      setProgress(fileId, 0, '⚠️ مطلوب تطبيق native');
+      setCardState(fileId, 'error', '⚠️ هذه الميزة تعمل في تطبيق iOS/Android');
+      fileState[fileId] = 'error';
+      showToast('⚠️ التحميل يعمل في التطبيق الأصيل فقط');
+      return;
+    }
   }
 
   /* ── 3. حفظ الملف محلياً عبر Capacitor Filesystem ──────── */
